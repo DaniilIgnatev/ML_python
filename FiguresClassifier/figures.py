@@ -1,0 +1,497 @@
+import numpy as np
+import numpy.linalg as la
+import matplotlib.pyplot as plt
+from enum import Enum
+
+
+class FiguresEnum(Enum):
+    NOISE = 'NOISE'
+    LINE = 'LINE'
+    TRIANGLE = 'TRIANGLE'
+    RECTANGLE = 'RECTANGLE'
+    PENTAGON = 'PENTAGON'
+    HEXAGON = 'HEXAGON'
+    OCTAGON = 'OCTAGON'
+    ELLIPSE = 'ELLIPSE'
+
+
+class FigureData:
+    def __init__(self, name: FiguresEnum, x: np.ndarray = None, y: np.ndarray = None, points: np.ndarray = None):
+        self.name = name
+        self.points = np.array([[]])
+        self.x = np.array([])
+        self.y = np.array([])
+
+        if points is not None:
+            self.set_points(points)
+        else:
+            if x is not None and y is not None:
+                self.set_xy(x, y)
+
+    def __copy__(self):
+        return FigureData(self.name, x=self.x.copy(), y=self.y.copy())
+
+    def set_points(self, points):
+        self.points = points
+        self.x = self.points[:, 0]
+        self.y = self.points[:, 1]
+
+        if self.is_empty:
+            self.set_xy(points[:, 0], points[:, 1])
+        else:
+            self.set_xy(np.array([]), np.array([]))
+
+    def set_xy(self, x, y):
+        self.x = x
+        self.y = y
+        self.points = np.array(list(zip(x, y)))
+
+    def append_xy(self, x, y):
+        self.set_xy(np.append(self.x, x), np.append(self.y, y))
+
+    def is_empty(self) -> bool:
+        return self.points.ndim != 2
+
+    def plot(self, x_lim=None, y_lim=None, save_to=None):
+        fig, ax = plt.subplots()
+
+        min_x = np.min(self.x)
+        max_x = np.max(self.x)
+
+        min_y = np.min(self.y)
+        max_y = np.max(self.y)
+
+        if x_lim:
+            ax.set_xlim(x_lim)
+        else:
+            offset_x = (max_x - min_x) / 10
+            ax.set_xlim([min_x - offset_x, max_x + offset_x])
+
+        if y_lim:
+            ax.set_ylim(y_lim)
+        else:
+            offset_y = (max_y - min_y) / 10
+            ax.set_ylim([min_y - offset_y, max_y + offset_y])
+
+        ax.scatter(self.x, self.y)
+        ax.invert_yaxis()
+
+        if save_to:
+            fig.savefig(save_to)
+        else:
+            plt.show()
+
+        plt.close()
+
+
+def _quicksort(points):
+    if len(points) <= 1:
+        return points
+
+    pivot = points[len(points) // 2]
+    left = [p for p in points if p[0] < pivot[0]]
+    middle = [p for p in points if p[0] == pivot[0]]
+    right = [p for p in points if p[0] > pivot[0]]
+
+    return _quicksort(left) + middle + _quicksort(right)
+
+
+class FigureGenerator:
+    name = None
+
+    def __init__(self, size: int, clip_points: bool, shift_to_zero=True, scale_to_fit=True, verbose=False):
+        self.normalization_size = size
+        self.clip_points = clip_points
+        self.shift_to_zero = shift_to_zero
+        self.scale_to_fit = scale_to_fit
+        self.verbose = verbose
+
+    def draw(self, scale_x, scale_y, angle) -> FigureData:
+        pass
+
+    def _draw_from_key_data(self, key_data: FigureData, scale_x, scale_y, angle) -> FigureData:
+        key_data_copy = key_data.__copy__()
+        self.__normalize(key_data_copy)
+        self._scale(key_data_copy, scale_x, scale_y)
+
+        data = FigureData(self.name)
+        points_transformed = key_data_copy.points
+        p_last = points_transformed[0]
+
+        for i in range(1, len(points_transformed)):
+            line_data = self.line(p_last, points_transformed[i])
+            X_add, Y_add = line_data.x, line_data.y
+            data.append_xy(X_add, Y_add)
+            p_last = points_transformed[i]
+
+        line_data = self.line(points_transformed[-1], points_transformed[0])
+        X_add, Y_add = line_data.x, line_data.y
+        data.append_xy(X_add, Y_add)
+
+        self._rotate(data, angle)
+
+        if self.shift_to_zero:
+            self._shift_to_zero(data)
+
+        if self.scale_to_fit:
+            self._scale_to_fit(data)
+
+        if self.clip_points:
+            self._clip(data)
+
+        self._filter(data)
+        return data
+
+    def line(self, p1, p2) -> FigureData:
+        x1 = p1[0]
+        y1 = p1[1]
+        x2 = p2[0]
+        y2 = p2[1]
+
+        k, b = self.__solve_line(x1, y1, x2, y2)
+
+        data = FigureData(self.name)
+
+        if np.isnan(k):
+            points = self.__line__y(x1, y1, y2)
+            data.set_points(points)
+        else:
+            points_XY = self.__line_xy(x1, x2, k, b)
+            points_YX = self.__line__yx(y1, y2, k, b)
+
+            if points_YX.size != 0:
+                points = np.vstack([points_XY, points_YX])
+                points = np.array(_quicksort(points))
+            else:
+                points = points_XY
+
+            data.set_points(points)
+            self._filter(data)
+
+        if self.verbose:
+            print(data.points)
+
+        return data
+
+    def __solve_line(self, x1, y1, x2, y2):
+        if x1 == x2:
+            return np.nan, min(y1, y2)
+
+        Y = np.array([
+            y1,
+            y2
+        ])
+
+        A = np.array(
+            [
+                [x1, 1],
+                [x2, 1]
+            ]
+        )
+
+        w = la.inv(A) @ Y
+        k = w[0]
+        b = w[1]
+
+        return k, b
+
+    def __line_xy(self, x1, x2, k, b):
+        if x1 > x2:
+            X = np.linspace(x2, x1, int(x1 - x2) + 1, endpoint=True)
+        else:
+            X = np.linspace(x1, x2, int(x2 - x1) + 1, endpoint=True)
+
+        Y = k * X + b
+        return np.array(list(zip(X, Y)))
+
+    def __line__yx(self, y1, y2, k, b):
+        if k == 0:
+            return np.array([])
+
+        if y1 > y2:
+            Y = np.linspace(y2, y1, int(y1 - y2) + 1, endpoint=True)
+        else:
+            Y = np.linspace(y1, y2, int(y2 - y1) + 1, endpoint=True)
+
+        X = (Y - b) / k
+        return np.array(list(zip(X, Y)))
+
+    def __line__y(self, x, y1, y2):
+        if y1 > y2:
+            Y = np.linspace(y2, y1, int(y1 - y2) + 1, endpoint=True)
+        else:
+            Y = np.linspace(y1, y2, int(y2 - y1) + 1, endpoint=True)
+
+        X = np.full(Y.shape, x)
+        return np.array(list(zip(X, Y)))
+
+    def __normalize(self, data: FigureData):
+        max = np.max(data.points)
+        points = data.points / max * self.normalization_size
+        data.set_points(points)
+
+    def _scale(self, data: FigureData, scale_x, scale_y):
+        S = np.array([[scale_x, 0],
+                      [0, scale_y]])
+
+        points = data.points @ S
+        data.set_points(points)
+
+    def _rotate(self, data: FigureData, angle):
+        angle = -angle
+        max = np.max(data.points)
+        center_point = np.array([max / 2, max / 2])
+
+        points = data.points - center_point
+        theta = np.radians(angle)
+
+        R = np.array([[np.cos(theta), -np.sin(theta)],
+                      [np.sin(theta), np.cos(theta)]])
+
+        points = [R @ p for p in points]
+        points = points + center_point
+        data.set_points(points)
+
+    def _clip(self, data: FigureData):
+        points = data.points
+        filtered_points = []
+
+        for p in points:
+            if 0 <= p[0] <= self.normalization_size:
+                if 0 <= p[1] <= self.normalization_size:
+                    filtered_points.append(np.array([p[0], p[1]]))
+
+        filtered_points = np.array(filtered_points)
+        data.set_points(filtered_points)
+
+    def _filter(self, data: FigureData):
+        points_dict = {}
+
+        for p in data.points:
+            x_int = int(p[0])
+            y_int = int(p[1])
+            point = np.array([x_int, y_int])
+
+            if x_int not in points_dict:
+                points_dict[x_int] = np.array([point])
+            else:
+                values = points_dict[x_int]
+                if not (np.any(np.all(values == point, axis=1))):
+                    points_dict[x_int] = np.vstack([values, point])
+                # else:
+                #     print('repeat')
+
+        values = list(points_dict.values())
+        values_flattened = []
+        for v in values:
+            for _v in v:
+                values_flattened.append(np.array(_v))
+        values_flattened = np.array(values_flattened)
+
+        data.set_points(values_flattened)
+
+    def _shift_to_zero(self, data: FigureData):
+        x_min = np.min(data.x)
+        X = data.x - x_min
+
+        y_min = np.min(data.y)
+        Y = data.y - y_min
+
+        data.set_xy(X, Y)
+
+    def _scale_to_fit(self, data: FigureData):
+        X = data.x
+        Y = data.y
+
+        x_min = np.min(X)
+        x_max = np.max(X)
+        width = x_max - x_min
+        width_ratio = width / self.normalization_size
+        X = X / width_ratio
+
+        y_min = np.min(Y)
+        y_max = np.max(Y)
+        height = y_max - y_min
+        height_ratio = height / self.normalization_size
+        Y = Y / height_ratio
+
+        data.set_xy(X, Y)
+
+
+class TriangleGenerator(FigureGenerator):
+    name = FiguresEnum.TRIANGLE
+
+    def draw(self, scale_x, scale_y, angle) -> FigureData:
+        points = np.array(
+            [
+                np.array([0, 1]),
+                np.array([0.5, 0]),
+                np.array([1, 1])
+            ]
+        )
+
+        data = FigureData(self.name, points=points)
+        return self._draw_from_key_data(data, scale_x, scale_y, angle)
+
+
+class RectangleGenerator(FigureGenerator):
+    name = FiguresEnum.RECTANGLE
+
+    def draw(self, scale_x, scale_y, angle) -> FigureData:
+        points = np.array(
+            [
+                np.array([0, 0]),
+                np.array([1, 0]),
+                np.array([1, 1]),
+                np.array([0, 1])
+            ]
+        )
+
+        data = FigureData(self.name, points=points)
+        return self._draw_from_key_data(data, scale_x, scale_y, angle)
+
+
+class EllipseGenerator(FigureGenerator):
+    name = FiguresEnum.ELLIPSE
+
+    def draw(self, scale_x, scale_y, angle) -> FigureData:
+        h = self.normalization_size / 2
+        k = self.normalization_size / 2
+        r = self.normalization_size / 2
+
+        data = FigureData(self.name)
+
+        X_range = np.linspace(0, self.normalization_size, self.normalization_size, endpoint=True)
+        Y1 = k + np.sqrt(r ** 2 - (X_range - h) ** 2)
+        Y2 = k - np.sqrt(r ** 2 - (X_range - h) ** 2)
+
+        X = np.append(X_range, X_range)
+        Y = np.append(Y1, Y2)
+        data.set_xy(X, Y)
+
+        Y_range = np.linspace(0, self.normalization_size, self.normalization_size, endpoint=True)
+        X1 = h + np.sqrt(r ** 2 - (Y_range - k) ** 2)
+        X2 = h - np.sqrt(r ** 2 - (Y_range - k) ** 2)
+
+        Y = np.append(Y, Y_range)
+        X = np.append(X, X1)
+        Y = np.append(Y, Y_range)
+        X = np.append(X, X2)
+
+        data.set_xy(X, Y)
+
+        self._scale(data, scale_x, scale_y)
+        self._rotate(data, angle)
+
+        if self.shift_to_zero:
+            self._shift_to_zero(data)
+
+        if self.scale_to_fit:
+            self._scale_to_fit(data)
+
+        if self.clip_points:
+            self._clip(data)
+
+        self._filter(data)
+
+        points = np.array(_quicksort(data.points))
+        data.set_points(points)
+
+        return data
+
+
+class LineGenerator(FigureGenerator):
+    name = FiguresEnum.LINE
+
+    def draw(self, scale_x, scale_y, angle) -> FigureData:
+        x1 = np.random.random()
+        y1 = np.random.random()
+
+        x2 = np.random.random()
+        y2 = np.random.random()
+
+        while int(x1 * 10) == int(x2 * 10) or int(y1 * 10) == int(y2 * 10):
+            x2 = int(np.random.random() * 10) / 10
+            y2 = int(np.random.random() * 10) / 10
+
+        points = np.array(
+            [
+                np.array([x1, y1]),
+                np.array([x2, y2]),
+            ]
+        )
+
+        data = FigureData(self.name, points=points)
+        try:
+            return self._draw_from_key_data(data, scale_x, scale_y, angle)
+        except:
+            return self.draw(scale_x, scale_y, angle)
+
+
+class NoiseGenerator(FigureGenerator):
+    name = FiguresEnum.NOISE
+
+    def draw(self, scale_x, scale_y, angle) -> FigureData:
+        x = np.random.normal(loc=0.5, scale=1, size=self.normalization_size)
+        y = np.random.normal(loc=0.5, scale=1, size=self.normalization_size)
+        data = FigureData(self.name, x=x, y=y)
+        self._shift_to_zero(data)
+        self._scale_to_fit(data)
+        return data
+
+
+# def pentagon(self):
+#     pass
+#
+# def hexagon(self):
+#     pass
+#
+# def heptagon(self):
+#     pass
+#
+# def octagon(self):
+#     pass
+#
+
+registered_figures = {
+    FiguresEnum.NOISE: NoiseGenerator,
+    FiguresEnum.LINE: LineGenerator,
+    FiguresEnum.TRIANGLE: TriangleGenerator,
+    FiguresEnum.RECTANGLE: RectangleGenerator,
+    FiguresEnum.ELLIPSE: EllipseGenerator,
+}
+
+# %%
+
+size = 32
+
+f = registered_figures[FiguresEnum.TRIANGLE](size, True, shift_to_zero=True, scale_to_fit=True)
+data = f.draw(1, 1, 0)
+data.plot([0, size], [0, size])
+
+triangle_generator = TriangleGenerator(size, True)
+data = triangle_generator.draw(1, 1, 45)
+data.plot()
+
+rectangle_generator = RectangleGenerator(size, True)
+data = rectangle_generator.draw(1, 1.5, 125)
+data.plot()
+
+ellipse_generator = EllipseGenerator(size, True)
+data = ellipse_generator.draw(1, 1, 0)
+data.plot(x_lim=[0, size], y_lim=[0, size])
+
+#%%
+samples = 10
+
+line_generator = LineGenerator(size, True)
+for i in range(samples):
+    data = line_generator.draw(1, 1, 0)
+    data.plot()
+
+
+noise_generator = NoiseGenerator(size, True)
+for i in range(samples):
+    data = noise_generator.draw(1, 1, 0)
+    data.plot()
+#%%
