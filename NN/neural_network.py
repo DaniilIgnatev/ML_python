@@ -1,15 +1,166 @@
+# This neural network has been adopted by me from DDO course in TU Ilmenau.
+import shutil
+import os
+
+
+import concurrent.futures
 import autograd.numpy as np
 import numpy as np
 import random
 
-from NN.optimizer import Optimizer
+import multiprocessing
+
+from NN.optimizer import OptimizerEnum
+from NN.optimizer import OptimizerFactory
+from NN.optimizer import OptimizerConfiguration
+
+
+class NeuralNetworkConfiguration:
+    def __init__(self,
+                 sizes: list,
+                 lambda_l1: float,
+                 lambda_l2: float,
+                 optimizer_configuration: OptimizerConfiguration,
+                 output=False,
+                 biases=None,
+                 weights=None
+                 ):
+        self.sizes = sizes
+        self.num_layers = len(sizes)
+        self.lambda_l1 = lambda_l1
+        self.lambda_l2 = lambda_l2
+        self.optimizer_configuration = optimizer_configuration
+        self.output = output
+        self.biases = biases
+        self.weights = weights
+
+    def is_trained(self) -> bool:
+        if self.biases is None:
+            return False
+
+        if self.weights is None:
+            return False
+
+        if len(self.biases) != len(self.sizes) - 1:
+            return False
+
+        if len(self.weights) != len(self.sizes) - 1:
+            return False
+
+        return True
+
+
+class EpochLog:
+    def __init__(self, index: int, W=None, B=None, accuracy=None):
+        self.index = index
+        self.W: list = W
+        self.B: list = B
+        self.accuracy = accuracy
+
+    def save(self, root_path):
+        if os.path.exists(root_path):
+            shutil.rmtree(root_path)
+            os.mkdir(root_path)
+        else:
+            os.mkdir(root_path)
+
+        np.savez(os.path.join(root_path, f'accuracy.npz'), self.accuracy)
+
+        layers_number = len(self.W)
+
+        for i in range(layers_number):
+            layer_path = os.path.join(root_path, f'layer_{i}')
+            if os.path.exists(layer_path):
+                shutil.rmtree(layer_path)
+                os.mkdir(layer_path)
+            else:
+                os.mkdir(layer_path)
+
+            np.savez(os.path.join(layer_path, 'W.npz'), np.array(self.W[i]))
+            np.savez(os.path.join(layer_path, 'B.npz'), np.array(self.B[i]))
+
+    def load(self, root_path):
+        if os.path.exists(root_path):
+            self.W = []
+            self.B = []
+
+            with np.load(os.path.join(root_path, f'accuracy.npz')) as loaded:
+                self.accuracy = float(loaded['arr_0'])
+
+            files = os.listdir(root_path)
+            files.sort()
+
+            for f in files:
+                layer_path = os.path.join(root_path, f)
+
+                if os.path.isdir(layer_path):
+                    W_path = os.path.join(layer_path, 'W.npz')
+                    with np.load(W_path) as loaded:
+                        self.W.append(loaded['arr_0'])
+
+                    B_path = os.path.join(layer_path, 'B.npz')
+                    with np.load(B_path) as loaded:
+                        self.B.append(loaded['arr_0'])
+
+
+class TrainingLog:
+    def __init__(self, epochs=None, max_accuracy=0.0):
+        if epochs is None:
+            epochs = []
+
+        self.epochs: [EpochLog] = epochs
+        self.max_accuracy = max_accuracy
+
+    def get_best_epoch(self) -> EpochLog:
+        for i in range(len(self.epochs)-1,-1,-1):
+            if self.epochs[i].accuracy == self.max_accuracy:
+                return self.epochs[i]
+
+    def get_last_epoch(self) -> EpochLog:
+        return self.epochs[-1]
+
+    def is_trained(self) -> bool:
+        return len(self.epochs) > 0 and self.max_accuracy > 0
+
+    def save(self, root_path):
+        if os.path.exists(root_path):
+            shutil.rmtree(root_path)
+            os.mkdir(root_path)
+        else:
+            os.mkdir(root_path)
+
+        np.savez(os.path.join(root_path, f'max_accuracy.npz'), self.max_accuracy)
+
+        for i in range(len(self.epochs)):
+            layer_path = os.path.join(root_path, f'epoch_{i}')
+            self.epochs[i].save(layer_path)
+
+    def load(self, root_path):
+        if os.path.exists(root_path):
+            self.epochs = []
+
+            with np.load(os.path.join(root_path, f'max_accuracy.npz')) as loaded:
+                self.max_accuracy = float(loaded['arr_0'])
+
+            files = os.listdir(root_path)
+            files.sort()
+
+            i = 0
+            for f in files:
+                epoch_path = os.path.join(root_path, f)
+                if os.path.isdir(epoch_path):
+                    epoch = EpochLog(i)
+                    epoch.load(epoch_path)
+                    self.epochs.append(epoch)
+                    i += 1
+
 
 class NeuralNetwork:
     """
     Class representing a feedforward neural network
     """
 
-    def __init__(self, sizes, lambda_l1=0, lambda_l2=0, output=True):
+    def __init__(self, configuration: NeuralNetworkConfiguration):
         """
         Initializes an instance of the class
         Arguments:
@@ -18,26 +169,58 @@ class NeuralNetwork:
             lambda_l2: L2 regularization parameter
             output: setting to True enables summary after each epoch
         """
-        # Store the number of layers and their sizes
-        self.num_layers = len(sizes)
-        self.sizes = sizes
+        self._configuration = configuration
+        self.training_log = TrainingLog()
 
-        # Randomly initialize weights and biases using standard distribution
-        self.biases = [np.random.randn(y, 1) for y in sizes[1:]]
-        self.weights = [np.random.randn(y, x)
-                        for x, y in zip(sizes[:-1], sizes[1:])]
+        if not self._configuration.is_trained():
+            # Randomly initialize weights and biases using standard distribution
+            self._configuration.biases = [np.random.randn(y, 1) for y in self._configuration.sizes[1:]]
+            self._configuration.weights = [np.random.randn(y, x)
+                                           for x, y in zip(self._configuration.sizes[:-1], self._configuration.sizes[1:])]
 
-        # Store regularization parameters and the output flag
-        self.lambda_l1 = lambda_l1
-        self.lambda_l2 = lambda_l2
-        self.output = output
+    def is_trained(self) -> bool:
+        return self.training_log.is_trained()
+
+    def _can_load(self, root_path) -> bool:
+        return os.path.exists(root_path)
+
+    def _save(self, root_path):
+        self.training_log.save(root_path)
+
+    def _load(self, root_path):
+        self.training_log.load(root_path)
+        epoch = self.training_log.get_best_epoch()
+        self._configuration.weights = epoch.W
+        self._configuration.biases = epoch.B
+
+    def sigmoid(self, a):
+        """
+        Computes a sigmoid function
+        Arguments:
+            a: an argument of the function
+        Returns:
+            A sigmoid value of the function
+        """
+
+        a = np.clip(a, -500, 500)
+        return 1 / (1 + np.exp(-a))
+
+    def sigmoid_derivative(self, sigmoid_a):
+        """
+        Computes a derivative of a sigmoid function
+        Arguments:
+            sigmoid_a: sigmoid value of the function a
+        Returns:
+            A sigmoid derivative value of the function a
+        """
+        return sigmoid_a * (1 - sigmoid_a)
 
     def forward_pass(self, x, return_lists=False):
         """
         Performs forward propagation
         Arguments:
             x: a sample (column-vector)
-            return_lists: set to False to return the last layer output or set to
+            return_lists: set False to return the last layer output or set to
                           True to return the lists of the activation function
                           and its derivative values
         Returns:
@@ -60,16 +243,16 @@ class NeuralNetwork:
         a_I.append(None)
 
         # Iterate over the layers starting from the second one
-        for l in range(1, self.num_layers):
+        for l in range(1, self._configuration.num_layers):
             # ToDo: Compute the weighted input of the layer (0.5 points)
-            z_l = self.weights[l - 1] @ a[l - 1] + self.biases[l - 1]
+            z_l = self._configuration.weights[l - 1] @ a[l - 1] + self._configuration.biases[l - 1]
 
             # ToDo: Compute the activation function (output) of the layer
             #       (0.5 points)
-            a_l = 1 / (1 + np.exp(-z_l))
+            a_l = self.sigmoid(z_l)
 
             # ToDo: Compute the activation function derivative (0.5 points)
-            a_I_l = a_l * (1 - a_l)
+            a_I_l = self.sigmoid_derivative(a_l)
 
             # Append the activation function and its derivative values to the lists
             a.append(a_l)
@@ -117,10 +300,10 @@ class NeuralNetwork:
         dJdb.insert(0, dJdb_l)
 
         # Iterate backwards over the layers starting from the second-to-last one
-        for l in range(self.num_layers - 2, 0, -1):
+        for l in range(self._configuration.num_layers - 2, 0, -1):
             # ToDo: Compute the error gradient of the layer (0.5 points)
             # $$\delta^l=a^{l(I)}\odot(W^{l+1})^T \delta^{l+1}.$$
-            delta_l = np.multiply(a_I[l], self.weights[l].T @ delta_l)
+            delta_l = np.multiply(a_I[l], self._configuration.weights[l].T @ delta_l)
 
             # $$\frac{\partial J^{(i)}}{\partial W^l}=\delta^{l(i)}(a^{l-1{(i)}})^T,\tag{0.4}$$
             # ToDo: Compute the partial derivative of the loss function w.r.t. the
@@ -139,20 +322,21 @@ class NeuralNetwork:
         # Return the lists
         return dJdW, dJdb
 
-    def update_mini_batch(self, mini_batch, optimizer: Optimizer):
+    def update_mini_batch(self, mini_batch, optimizer_configuration: OptimizerConfiguration):
         """
         Updates the network parameters based on a single mini-batch
         Arguments:
             mini_batch: a mini-batch
             optimizer: an optimizer
         """
+
         # Initialize the list of partial derivatives of the cost function w.r.t.
         # the network weights of each layer
-        dJdW = [np.zeros(W.shape) for W in self.weights]
+        dJdW = [np.zeros(W.shape) for W in self._configuration.weights]
 
         # Initialize the list of partial derivatives of the cost function w.r.t.
         # the network biases of each layer
-        dJdb = [np.zeros(b.shape) for b in self.biases]
+        dJdb = [np.zeros(b.shape) for b in self._configuration.biases]
 
         # Compute partial derivatives of the cost function by summing up
         # partial derivatives of the loss function evaluated on the mini-batch
@@ -173,15 +357,18 @@ class NeuralNetwork:
 
         # ToDo: Apply the L1 and L2 regularizations by modifying the cost
         #       function partial derivatives (0.5 points)
-        L1 = [self.lambda_l1 * np.sign(dJdW_l) for dJdW_l in dJdW]
-        L2 = [self.lambda_l2 * dJdW_l for dJdW_l in dJdW]
+        L1 = [self._configuration.lambda_l1 * np.sign(dJdW_l) for dJdW_l in dJdW]
+        L2 = [self._configuration.lambda_l2 * dJdW_l for dJdW_l in dJdW]
         dJdW = [dJdW_l + L1_l + L2_l for dJdW_l, L1_l, L2_l in zip(dJdW, L1, L2)]
 
-        # Update the network parameters using an external optimizer
-        self.weights = optimizer.update(self.weights, dJdW, 'W')
-        self.biases = optimizer.update(self.biases, dJdb, 'b')
+        optimizer = OptimizerFactory.instance(optimizer_configuration)
 
-    def train(self, training_data, epochs, mini_batch_size, optimizer: Optimizer,
+        biases = optimizer.update(self._configuration.biases, dJdb, 'b')
+        weights = optimizer.update(self._configuration.weights, dJdW, 'W')
+
+        return biases, weights
+
+    def train(self, training_data, epochs, mini_batch_size,
               test_data=None, random_shuffle=True):
         """
         Trains the neural network
@@ -215,24 +402,58 @@ class NeuralNetwork:
             mini_batches = [training_data[k:k + mini_batch_size]
                             for k in range(0, n, mini_batch_size)]
 
+
+            # new_biases = []
+            # new_weights = []
+            #
+            # for i in range(self.__configuration.num_layers - 1):
+            #     b_i = np.zeros(self.__configuration.biases[i].shape)
+            #     new_biases.append(b_i)
+            #     w_i = np.zeros(self.__configuration.weights[i].shape)
+            #     new_weights.append(w_i)
+            #
+            # with concurrent.futures.ProcessPoolExecutor() as executor:
+            #     # Use list comprehension to execute the function concurrently
+            #     results = [executor.submit(self.update_mini_batch, mini_batch, self.__configuration.optimizer_configuration) for mini_batch in mini_batches]
+            #
+            #     for future in concurrent.futures.as_completed(results):
+            #         b, w = future.result()
+            #         for i in range(self.__configuration.num_layers - 1):
+            #             new_biases[i] = new_biases[i] + b[i]
+            #             new_weights[i] = new_weights[i] + w[i]
+            #
+            # for i in range(self.__configuration.num_layers - 1):
+            #     new_biases[i] = new_biases[i] / len(mini_batches)
+            #     new_weights[i] = new_weights[i] / len(mini_batches)
+            #
+            # self.__configuration.biases = new_biases
+            # self.__configuration.weights = new_weights
+
+
             # Iterate over the mini-batches (step 3)
             for mini_batch in mini_batches:
                 # Update the network parameters based on a mini-batch
-                self.update_mini_batch(mini_batch, optimizer)
+                b, w = self.update_mini_batch(mini_batch, self._configuration.optimizer_configuration)
+                self._configuration.biases = b
+                self._configuration.weights = w
 
             # Print the epoch summary
-            if test_data is not None and self.output:
+            if test_data is not None and self._configuration.output:
                 success_tests = self.evaluate(test_data)
                 print('Epoch {0}: {1} / {2}'.format(
                     j + 1, success_tests, n_test))
-            elif self.output:
+            elif self._configuration.output:
                 print('Epoch {0} is complete'.format(j + 1))
 
             # Stop training if 100% accuracy is achieved
             if test_data is not None:
                 accuracy = success_tests / n_test
+                epoch_log = EpochLog(j, self._configuration.weights, self._configuration.biases, accuracy)
+                self.training_log.epochs.append(epoch_log)
+
                 if accuracy > max_accuracy:
                     max_accuracy = accuracy
+                    self.training_log.max_accuracy = max_accuracy
                 if accuracy == 1.0:
                     print('100% accuracy')
                     break

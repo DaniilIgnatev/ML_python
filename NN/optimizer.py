@@ -1,5 +1,28 @@
 import numpy as np
 import numpy.linalg as la
+from enum import Enum
+
+
+class OptimizerEnum(Enum):
+    GDOptimizer = 'GDOptimizer'
+
+
+
+class OptimizerConfiguration:
+    """
+    Creates an instance of the optimizer configuration
+    Arguments:
+        alpha: a step size
+        max_iter: a maximum number of iterations
+        eps: a tolerance value
+        record: a flag for recording optimization history
+    """
+    def __init__(self, name: OptimizerEnum, alpha, max_iter, eps, record):
+        self.name = name
+        self.alpha = alpha
+        self.max_iter = max_iter
+        self.eps = eps
+        self.record = record
 
 
 class Optimizer:
@@ -7,21 +30,16 @@ class Optimizer:
     Optimizer
     """
 
-    def __init__(self, alpha, max_iter, eps, record):
+    def __init__(self, configuration: OptimizerConfiguration):
         """
         Creates an instance of the optimizer
         Arguments:
-            alpha: a step size
-            max_iter: a maximum number of iterations
-            eps: a tolerance value
-            record: a flag for recording optimization history
+            configuration - container with parameters
         Returns:
             Optimizer
         """
-        self.alpha = alpha
-        self.max_iter = max_iter
-        self.eps = eps
-        self.record = record
+        self.configuration = configuration
+
         self.iter = None
         self.last_deltas = {}
         self.history = {}
@@ -63,7 +81,7 @@ class Optimizer:
         updated_values = [value + delta for value, delta in zip(values, deltas)]
 
         # Store the updated values if necessary
-        if self.record:
+        if self.configuration.record:
             if key not in self.history:
                 self.history[key] = [values]
             self.history[key].append(updated_values)
@@ -90,14 +108,14 @@ class Optimizer:
         self.iter = self.iter + 1
 
         # Check the iteration counter
-        if self.iter > self.max_iter - 1:
+        if self.iter > self.configuration.max_iter - 1:
             return False
 
         # Compute the delta norm
         delta_norm = la.norm(self.last_deltas[key][0])
 
         # Check the delta norm
-        if delta_norm < self.eps:
+        if delta_norm < self.configuration.eps:
             return False
 
         return True
@@ -129,23 +147,21 @@ class Optimizer:
         return history
 
 
-class GDoptimizer(Optimizer):
+class GDOptimizer(Optimizer):
     """
     Gradient descent optimizer
     """
 
-    def __init__(self, alpha, max_iter, eps, record=False):
+    def __init__(self, configuration: OptimizerConfiguration):
         """
         Creates an instance of the gradient descent optimizer
         Arguments:
-            alpha: a step size
-            max_iter: a maximum number of iterations
-            eps: a tolerance value
-            record: a flag for recording optimization history
+            configuration - container with parameters
         Returns:
             Gradient descent optimizer
         """
-        super().__init__(alpha, max_iter, eps, record)
+        self.configuration = configuration
+        super().__init__(self.configuration)
 
     def _deltas(self, grads, key):
         """
@@ -158,10 +174,19 @@ class GDoptimizer(Optimizer):
         """
         # TODO: Compute the deltas for gradient descent
         # Hint: use list comprehension
-        deltas = [-self.alpha * grad for grad in grads]
+        deltas = [-self.configuration.alpha * grad for grad in grads]
 
         # Store the deltas
         self.last_deltas[key] = deltas
 
         # Return the deltas
         return deltas
+
+
+class OptimizerFactory:
+    @staticmethod
+    def instance(configuration: OptimizerConfiguration) -> GDOptimizer | None:
+        if configuration.name == OptimizerEnum.GDOptimizer:
+            return GDOptimizer(configuration)
+
+        return None
