@@ -20,7 +20,7 @@ np.random.seed(1)
 dimensions_size = 32
 
 root_path = os.path.curdir
-root_path = 'C:\\Users\\Daniil\\Desktop\\FiguresClassifier'
+# root_path = 'C:\\Users\\Daniil\\Desktop\\FiguresClassifier'
 
 print(root_path)
 
@@ -193,13 +193,10 @@ def process_data(event):
     x = np.array(xdata)
     mask_x = x > 1
     x = x[mask_x]
-    # print("X data:", x)
 
     y = np.array(ydata)
     mask_y = y > 1
     y = y[mask_y]
-    # print("Y data:", y)
-
 
     data = FigureData(FiguresEnum.NOISE, dimensions_size, x, y)
     data.shift_to_zero()

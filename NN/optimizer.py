@@ -267,7 +267,7 @@ class RMSPropOptimizer(Optimizer):
 
 class OptimizerFactory:
     @staticmethod
-    def instance(configuration: OptimizerConfiguration) -> Optimizer | None:
+    def instance(configuration: OptimizerConfiguration):
         if configuration.name == OptimizerEnum.GDOptimizer:
             return GDOptimizer(configuration)
         if configuration.name == OptimizerEnum.AdaGradOptimizer:
