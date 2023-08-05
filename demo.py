@@ -60,7 +60,7 @@ min_scale=1.0
 max_scale=3.0
 scale_precision=0.25
 angle_precision=15
-distortion_percentage=5
+distortion_percentage=3
 save_plots=False
 
 optimizer_alpha=0.01
@@ -239,9 +239,8 @@ def process_data(event):
 
     data.clip()
     data.filter()
-    data.plot()
 
-    if len(xdata) > 1:
+    if len(data.points) > 1:
         noise_p = noise_classifier.classify(x, y)
         line_p = 0#line_classifier.classify(x, y)
         triangle_p = triangle_classifier.classify(x, y)
@@ -250,22 +249,16 @@ def process_data(event):
 
         print(f'n: {noise_p}; l:{line_p}; t:{triangle_p}; r:{rectangle_p}; e:{ellipse_p}')
 
-        decision = 'noise'
-        p = noise_p
-        if line_p > p:
-            decision = 'line'
-            p = line_p
-        if triangle_p > p:
-            decision = 'triangle'
-            p = triangle_p
-        if rectangle_p > p:
-            decision = 'rectangle'
-            p = rectangle_p
-        if ellipse_p > p:
-            decision = 'ellipse_p'
-            p = ellipse_p
+        P = [noise_p, line_p, triangle_p, rectangle_p, ellipse_p]
+        soft_max_p = softmax()
+        print(f'soft_max: {soft_max_p}')
 
-        text_box.set_val(f'{decision}={round(p*100, 1)}%')
+        labels = ['Noise', 'Line', 'Triangle', 'Rectangle', 'Ellipse']
+        label_index = np.argmax(soft_max_p)
+
+        text_box.set_val(f'{labels[label_index]}={round(P[label_index] * 100, 1)}%')
+
+        data.plot()
 
 
 def clear_plot(event):
@@ -275,6 +268,12 @@ def clear_plot(event):
     line.set_data(xdata, ydata)
     text_box.set_val('')
     fig.canvas.draw()
+
+
+def softmax(x):
+    """Compute softmax values for each sets of scores in x."""
+    e_x = np.exp(x - np.max(x))
+    return e_x / e_x.sum()
 
 
 # Connect the events to the functions
