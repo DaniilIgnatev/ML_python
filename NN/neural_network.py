@@ -21,6 +21,7 @@ class NeuralNetworkConfiguration:
                  lambda_l1: float,
                  lambda_l2: float,
                  optimizer_configuration: OptimizerConfiguration,
+                 mini_batch_size: int,
                  output=False,
                  biases=None,
                  weights=None
@@ -30,6 +31,8 @@ class NeuralNetworkConfiguration:
         self.lambda_l1 = lambda_l1
         self.lambda_l2 = lambda_l2
         self.optimizer_configuration = optimizer_configuration
+        self.max_epochs = 50
+        self.mini_batch_size = mini_batch_size
         self.output = output
         self.biases = biases
         self.weights = weights
@@ -368,15 +371,12 @@ class NeuralNetwork:
 
         return biases, weights
 
-    def train(self, training_data, epochs, mini_batch_size,
+    def train(self, training_data,
               test_data=None, random_shuffle=True):
         """
         Trains the neural network
         Arguments:
             training_data: a training set
-            epochs: a maximum number of epochs
-            mini_batch_size: a mini-batch size
-            optimizer: an optimizer
             test_data: a test set
             random_shuffle: determines if the dataset needs to be shuffled
         """
@@ -388,19 +388,20 @@ class NeuralNetwork:
         n = len(training_data)
 
         # Initialize the auxiliary variables
-        success_tests = 0
         max_accuracy = 0.1
+        max_no_improvement_epochs = 7
+        no_improvement_epochs_counter = 0
 
         # Iterate over epochs
-        for j in range(epochs):
+        for j in range(self._configuration.max_epochs):
             # Shuffle the training set (step 2)
             if random_shuffle:
                 random.shuffle(training_data)
 
             # Divide the training set into mini batches, creating list of mini
             # batches with non-overlapping data (step 2)
-            mini_batches = [training_data[k:k + mini_batch_size]
-                            for k in range(0, n, mini_batch_size)]
+            mini_batches = [training_data[k:k + self._configuration.mini_batch_size]
+                            for k in range(0, n, self._configuration.mini_batch_size)]
 
 
             # new_biases = []
@@ -437,30 +438,40 @@ class NeuralNetwork:
                 self._configuration.biases = b
                 self._configuration.weights = w
 
+            success_training = self.evaluate(training_data)
+            train_accuracy = success_training / len(training_data)
+
+            success_tests = self.evaluate(test_data)
+            test_accuracy = success_tests / n_test
+
             # Print the epoch summary
             if test_data is not None and self._configuration.output:
-                success_tests = self.evaluate(test_data)
-                print('Epoch {0}: {1} / {2}'.format(
-                    j + 1, success_tests, n_test))
+                print(f'Epoch {j}: train {success_training} / {len(training_data)} = {train_accuracy}; tests {success_tests} / {n_test} = {test_accuracy}')
             elif self._configuration.output:
                 print('Epoch {0} is complete'.format(j + 1))
 
             # Stop training if 100% accuracy is achieved
             if test_data is not None:
-                accuracy = success_tests / n_test
-                epoch_log = EpochLog(j, self._configuration.weights, self._configuration.biases, accuracy)
+                epoch_log = EpochLog(j, self._configuration.weights, self._configuration.biases, test_accuracy)
                 self.training_log.epochs.append(epoch_log)
 
-                if accuracy > max_accuracy:
-                    max_accuracy = accuracy
+                if test_accuracy > max_accuracy:
+                    no_improvement_epochs_counter = 0
+                    max_accuracy = test_accuracy
                     self.training_log.max_accuracy = max_accuracy
-                if accuracy == 1.0:
+                else:
+                    no_improvement_epochs_counter += 1
+                    if no_improvement_epochs_counter >= max_no_improvement_epochs:
+                        print('max_no_improvement_epochs reached')
+                        break
+
+                if test_accuracy == 1.0:
                     print('100% accuracy')
                     break
 
         # Print training summary
         if test_data is not None:
-            print('Current accuracy:', accuracy)
+            print('Current accuracy:', test_accuracy)
             print('Maximum accuracy:', max_accuracy)
 
     def evaluate(self, test_data):

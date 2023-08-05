@@ -1,7 +1,5 @@
 import os
 import numpy as np
-import pandas as pd
-import shutil
 
 from Figures.train_data import DatasetGenerator
 from Figures.train_data import DatasetGeneratorConfiguration
@@ -10,6 +8,13 @@ from Figures.figures import FigureData
 from Figures.figures import FiguresEnum
 from NN.neural_network import NeuralNetwork
 from NN.neural_network import NeuralNetworkConfiguration
+
+
+from Figures.train_data import DatasetGeneratorConfiguration
+from Figures.figures import FiguresEnum
+from NN.neural_network import NeuralNetworkConfiguration
+from NN.optimizer import OptimizerConfiguration
+from NN.optimizer import OptimizerEnum
 
 
 class ClassifierConfiguration:
@@ -102,7 +107,24 @@ class Classifier(NeuralNetwork):
         print(f'Samples successfully classified before training: {self.evaluate(test_data)} of {len(test_data)}')
 
         training_data = self.get_train_data()
-        self.train(training_data=training_data, epochs=50, mini_batch_size=128, test_data=test_data, random_shuffle=True)
+        self.train(training_data=training_data, test_data=test_data, random_shuffle=True)
         print(f'Samples successfully classified after training: {self.evaluate(test_data)} of {len(test_data)}')
 
         self._save(self.root_path)
+
+    def classify(self, x, y) -> float:
+        if x is list:
+            x = np.array(x)
+
+        if y is list:
+            y = np.array(y)
+
+        data = FigureData(self.__configuration.target_figure, self.__configuration.dimensions_size, x, y)
+        data.shift_to_zero()
+        data.scale_to_fit()
+        data.clip()
+        data.filter()
+        nn_input, label = self.data_from_figure_data(data)
+
+        p = float(self.forward_pass(nn_input))
+        return p

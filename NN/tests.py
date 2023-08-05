@@ -108,4 +108,3 @@ if __name__ == "__main__":
     network.train(training_data=train, epochs=10, mini_batch_size=20, test_data=test,
                   random_shuffle=True)
     print(f'Samples successfully classified after training: {network.evaluate(test)} of {len(test)}')
-

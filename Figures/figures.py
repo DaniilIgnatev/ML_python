@@ -80,13 +80,12 @@ class FigureData:
 
         if save_to:
             fig.savefig(save_to)
+            plt.clf()
+            plt.close()
+            del fig
+            gc.collect()
         else:
             plt.show()
-
-        plt.clf()
-        plt.close()
-        del fig
-        gc.collect()
 
     def scale_key_points(self):
         max = np.max(self.points)
@@ -179,6 +178,15 @@ class FigureData:
         Y = Y / height_ratio
 
         self.set_xy(X, Y)
+
+    def simplify(self):
+        """
+        Deletes every second point
+        :return:
+        """
+        indices_to_delete = np.random.choice(np.arange(len(self.points)), size=int(len(self.points)/2), replace=False)
+        points = np.delete(self.points, indices_to_delete, axis=0)
+        self.set_points(points)
 
 
 class FigureGenerator:
@@ -470,7 +478,7 @@ class NoiseGenerator(FigureGenerator):
 
 registered_figures = {
     FiguresEnum.NOISE: NoiseGenerator,
-    FiguresEnum.LINE: LineGenerator,
+    # FiguresEnum.LINE: LineGenerator,
     FiguresEnum.TRIANGLE: TriangleGenerator,
     FiguresEnum.RECTANGLE: RectangleGenerator,
     FiguresEnum.ELLIPSE: EllipseGenerator,

@@ -82,6 +82,8 @@ class DatasetGenerator:
         self.figures = registered_figures
         self.root_path = os.path.join(configuration.path, self.__configuration.name)
 
+        # self._print_size()
+
         self.dataset = {}
         if self.__can_load():
             self.__load()
@@ -150,8 +152,16 @@ class DatasetGenerator:
                                          int((self.__configuration.max_angle - self.__configuration.min_angle) / self.__configuration.angle_precision) + 1,
                                          endpoint=True):
                     data = figure.draw(scale_x, scale_y, angle)
+                    if not data.is_empty():
+                        figures.append(data)
+
+                    data = figure.draw(scale_x, scale_y, angle)
+                    data.simplify()
+                    if not data.is_empty():
+                        figures.append(data)
 
                     if self.__configuration.distortion_percentage > 0:
+                        data = figure.draw(scale_x, scale_y, angle)
                         y_offset = np.random.random(data.y.size) * (self.__configuration.dimensions_size * self.__configuration.distortion_percentage / 100)
                         y = data.y + y_offset
                         data.set_xy(data.x, y)
@@ -159,9 +169,10 @@ class DatasetGenerator:
                         data.shift_to_zero()
                         data.scale_to_fit()
                         data.clip()
+                        data.simplify()
 
-                    if not data.is_empty():
-                        figures.append(data)
+                        if not data.is_empty():
+                            figures.append(data)
 
                 angle_start = angle_start + angle_offset
                 if angle_start >= 360:
@@ -179,24 +190,12 @@ class DatasetGenerator:
             data_single = self.__generate_single(figure)
             self.dataset[figure_key] = data_single
 
+    def _print_size(self):
+        print(f'Dataset: {self.__configuration.name}')
 
-if __name__ == "__main__":
-    # dataset = DatasetGenerator(DatasetGeneratorConfiguration('32_05_35_1_0_360_30_0',
-    #                                                          'C:\\Users\\Daniil\\Desktop\\datasets',
-    #                                                          32, 0.5, 3.5, 1, 0, 360, 30, 0, True))
+        scale_steps = (self.__configuration.max_scale - self.__configuration.min_scale) / self.__configuration.scale_precision
+        rotation_steps = (self.__configuration.max_angle - self.__configuration.min_angle) / self.__configuration.angle_precision
+        samples_figure = scale_steps * scale_steps * rotation_steps * 3
 
-    # dataset = DatasetGenerator(DatasetGeneratorConfiguration('32_05_35_1_0_360_30_15',
-    #                                                          'C:\\Users\\Daniil\\Desktop\\datasets',
-    #                                                          32, 0.5, 3.5, 1, 0, 360, 30, 15, True))
-
-    # dataset = DatasetGenerator(DatasetGeneratorConfiguration('32_05_35_1_0_360_30_25',
-    #                                                          'C:\\Users\\Daniil\\Desktop\\datasets',
-    #                                                          32, 0.5, 3.5, 1, 0, 360, 30, 25, True))
-
-    train_dataset_config1 = DatasetGeneratorConfiguration(f'32_05_35_025_0_360_0', 'C:\\Users\\Daniil\\Desktop\\datasets',
-                                                         32, 0.5, 3.5, 0.25, 0, 360, 15, 0, True)
-    dataset_1 = DatasetGenerator(train_dataset_config1)
-
-    test_dataset_config2 = DatasetGeneratorConfiguration(f'32_05_35_025_0_360_15', 'C:\\Users\\Daniil\\Desktop\\datasets',
-                                                        32, 0.5, 3.5, 0.5, 0, 360, 30, 15, True)
-    dataset_2= DatasetGenerator(test_dataset_config2)
+        print(f'Samples for a single figure: {samples_figure}')
+        print(f'Total samples: {samples_figure * len(self.figures)}')
