@@ -9,6 +9,7 @@ from Figures.figures import FiguresEnum
 from NN.neural_network import NeuralNetworkConfiguration
 from NN.optimizer import OptimizerConfiguration
 from NN.optimizer import OptimizerEnum
+from Figures.figures import FigureData
 
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Button, TextBox
@@ -17,8 +18,10 @@ random.seed(1)
 np.random.seed(1)
 
 dimensions_size = 32
-# root_path = 'C:\\Users\\Daniil\\Desktop\\FiguresClassifier'
+
 root_path = os.path.curdir
+root_path = 'C:\\Users\\Daniil\\Desktop\\FiguresClassifier'
+
 print(root_path)
 
 c_factory = ClassifierFactory(dimensions_size, root_path)
@@ -38,11 +41,26 @@ c_factory = ClassifierFactory(dimensions_size, root_path)
 # nn_l1=0.0
 # nn_l2=10
 
+# min_scale=1.0
+# max_scale=3.0
+# scale_precision=0.25
+# angle_precision=15
+# distortion_percentage=10
+# save_plots=False
+#
+# optimizer_alpha=0.01
+# optimizer_beta=0.9
+#
+# nn_h1=100
+# nn_h2=10
+# nn_l1=0.01
+# nn_l2=10
+
 min_scale=1.0
 max_scale=3.0
 scale_precision=0.25
 angle_precision=15
-distortion_percentage=10
+distortion_percentage=5
 save_plots=False
 
 optimizer_alpha=0.01
@@ -50,7 +68,7 @@ optimizer_beta=0.9
 
 nn_h1=100
 nn_h2=10
-nn_l1=0.01
+nn_l1=0.0
 nn_l2=10
 
 noise_classifier = c_factory.get_classifier(FiguresEnum.NOISE,
@@ -169,6 +187,7 @@ def on_release(event):
 def process_data(event):
     print('process_data')
 
+    global dimensions_size
     global xdata, ydata
 
     x = np.array(xdata)
@@ -181,6 +200,12 @@ def process_data(event):
     y = y[mask_y]
     # print("Y data:", y)
 
+
+    data = FigureData(FiguresEnum.NOISE, dimensions_size, x, y)
+    data.shift_to_zero()
+    data.scale_to_fit()
+    x = data.x
+    y = data.y
     x_interpolated = np.array([])
     y_interpolated = np.array([])
 
@@ -200,6 +225,24 @@ def process_data(event):
             y_n3 = (y[i + 1] + y_n) / 2
             x_interpolated = np.append(x_interpolated, x_n3)
             y_interpolated = np.append(y_interpolated, y_n3)
+
+            x_n4 = (x[i] + x_n2) / 2
+            y_n4 = (y[i] + y_n2) / 2
+            x_interpolated = np.append(x_interpolated, x_n4)
+            y_interpolated = np.append(y_interpolated, y_n4)
+
+            x_n5 = (x_n2 + x_n3) / 2
+            y_n5 = (y_n2 + y_n3) / 2
+            x_interpolated = np.append(x_interpolated, x_n5)
+            y_interpolated = np.append(y_interpolated, y_n5)
+
+    x = np.append(x, x_interpolated)
+    y = np.append(y, y_interpolated)
+    data.set_xy(x, y)
+
+    data.clip()
+    data.filter()
+    data.plot()
 
     if len(xdata) > 1:
         noise_p = noise_classifier.classify(x, y)
