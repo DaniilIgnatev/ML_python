@@ -389,7 +389,7 @@ class NeuralNetwork:
 
         # Initialize the auxiliary variables
         max_accuracy = 0.1
-        max_no_improvement_epochs = 7
+        max_no_improvement_epochs = 5
         no_improvement_epochs_counter = 0
 
         # Iterate over epochs
