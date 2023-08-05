@@ -71,7 +71,7 @@ optimizer_beta=0.9
 
 nn_h1=100
 nn_h2=10
-nn_l1=0
+nn_l1=0.001
 nn_l2=0.1
 
 noise_classifier = c_factory.get_classifier(FiguresEnum.NOISE,

@@ -276,8 +276,8 @@ class AdamOptimizer(Optimizer):
         """
         super().__init__(configuration)
         self.nu = {}
-        self.m = 0
-        self.v = 0
+        self.m = 0.0
+        self.v = 0.0
         self.t = 0
 
     def _deltas(self, grads, key):
@@ -289,13 +289,15 @@ class AdamOptimizer(Optimizer):
         Returns:
             The list containing the deltas of the parameter
         """
-        self.t += 1  # Increment Time Step
+        self.t += 1.0  # Increment Time Step
         # Update biased first and second moment estimates
-        self.m = self._configuration.beta1 * self.m + (1 - self._configuration.beta1) * grads
-        self.v = self._configuration.beta2 * self.v + (1 - self._configuration.beta2) * np.power(grads, 2)
+        grads_np = np.array(grads)
+
+        self.m = self._configuration.beta1 * self.m + (1.0 - self._configuration.beta1) * grads_np
+        self.v = self._configuration.beta2 * self.v + (1.0 - self._configuration.beta2) * np.power(grads_np, 2)
         # Compute bias-corrected first and second moment estimates
-        m_hat = self.m / (1 - np.power(self._configuration.beta1, self.t))
-        v_hat = self.v / (1 - np.power(self._configuration.beta2, self.t))
+        m_hat = self.m / (1.0 - np.power(self._configuration.beta1, self.t))
+        v_hat = self.v / (1.0 - np.power(self._configuration.beta2, self.t))
         # Update parameters
         deltas = self._configuration.alpha * m_hat / (np.sqrt(v_hat) + self._configuration.eps)
         return deltas
