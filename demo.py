@@ -1,4 +1,5 @@
 import os
+import sys
 import random
 import numpy as np
 from Figures.classifier import ClassifierConfiguration
@@ -19,9 +20,11 @@ np.random.seed(1)
 
 dimensions_size = 32
 
-root_path = os.path.curdir
+if getattr(sys, 'frozen', False):
+    root_path = os.path.dirname(sys.executable)
+else:
+    root_path = os.path.abspath(os.getcwd())
 # root_path = 'C:\\Users\\Daniil\\Desktop\\FiguresClassifier'
-
 print(root_path)
 
 c_factory = ClassifierFactory(dimensions_size, root_path)
@@ -60,16 +63,16 @@ min_scale=1.0
 max_scale=3.0
 scale_precision=0.25
 angle_precision=15
-distortion_percentage=0
+distortion_percentage=5
 save_plots=False
 
-optimizer_alpha=0.01
+optimizer_alpha=0.001
 optimizer_beta=0.9
 
 nn_h1=100
 nn_h2=10
-nn_l1=0.0
-nn_l2=10
+nn_l1=0
+nn_l2=0.1
 
 noise_classifier = c_factory.get_classifier(FiguresEnum.NOISE,
                                             min_scale=min_scale, max_scale=max_scale, scale_precision=scale_precision, angle_precision=angle_precision,
@@ -260,7 +263,7 @@ def process_data(event):
         labels = ['Noise', 'Line', 'Triangle', 'Rectangle', 'Ellipse']
         label_index = np.argmax(soft_max_p)
 
-        text_box.set_val(f'{labels[label_index]}={round(P[label_index] * 100, 1)}%')
+        text_box.set_val(f'{labels[label_index]}')
 
         data.plot()
 
@@ -292,6 +295,7 @@ process_button.on_clicked(process_data)
 clear_button.on_clicked(clear_plot)
 
 plt.show()
+
 
 
 #%%

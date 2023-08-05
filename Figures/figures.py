@@ -477,7 +477,7 @@ class NoiseGenerator(FigureGenerator):
 #
 
 registered_figures = {
-    FiguresEnum.NOISE: NoiseGenerator,
+    # FiguresEnum.NOISE: NoiseGenerator,
     # FiguresEnum.LINE: LineGenerator,
     FiguresEnum.TRIANGLE: TriangleGenerator,
     FiguresEnum.RECTANGLE: RectangleGenerator,

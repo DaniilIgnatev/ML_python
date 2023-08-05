@@ -31,7 +31,7 @@ class NeuralNetworkConfiguration:
         self.lambda_l1 = lambda_l1
         self.lambda_l2 = lambda_l2
         self.optimizer_configuration = optimizer_configuration
-        self.max_epochs = 50
+        self.max_epochs = 100
         self.mini_batch_size = mini_batch_size
         self.output = output
         self.biases = biases
@@ -60,14 +60,14 @@ class EpochLog:
         self.B: list = B
         self.accuracy = accuracy
 
-    def save(self, root_path):
+    def save(self, root_path, file_format):
         if os.path.exists(root_path):
             shutil.rmtree(root_path)
             os.mkdir(root_path)
         else:
             os.mkdir(root_path)
 
-        np.savez(os.path.join(root_path, f'accuracy.npz'), self.accuracy)
+        np.save(os.path.join(root_path, f'accuracy.{file_format}'), self.accuracy)
 
         layers_number = len(self.W)
 
@@ -79,15 +79,15 @@ class EpochLog:
             else:
                 os.mkdir(layer_path)
 
-            np.savez(os.path.join(layer_path, 'W.npz'), np.array(self.W[i]))
-            np.savez(os.path.join(layer_path, 'B.npz'), np.array(self.B[i]))
+            np.save(os.path.join(layer_path, f'W.{file_format}'), np.array(self.W[i]))
+            np.save(os.path.join(layer_path, f'B.{file_format}'), np.array(self.B[i]))
 
-    def load(self, root_path):
+    def load(self, root_path, file_format):
         if os.path.exists(root_path):
             self.W = []
             self.B = []
 
-            with np.load(os.path.join(root_path, f'accuracy.npz')) as loaded:
+            with np.load(os.path.join(root_path, f'accuracy.{file_format}')) as loaded:
                 self.accuracy = float(loaded['arr_0'])
 
             files = os.listdir(root_path)
@@ -97,11 +97,11 @@ class EpochLog:
                 layer_path = os.path.join(root_path, f)
 
                 if os.path.isdir(layer_path):
-                    W_path = os.path.join(layer_path, 'W.npz')
+                    W_path = os.path.join(layer_path, f'W.{file_format}')
                     with np.load(W_path) as loaded:
                         self.W.append(loaded['arr_0'])
 
-                    B_path = os.path.join(layer_path, 'B.npz')
+                    B_path = os.path.join(layer_path, f'B.{file_format}')
                     with np.load(B_path) as loaded:
                         self.B.append(loaded['arr_0'])
 
@@ -115,7 +115,7 @@ class TrainingLog:
         self.max_accuracy = max_accuracy
 
     def get_best_epoch(self) -> EpochLog:
-        for i in range(len(self.epochs)-1,-1,-1):
+        for i in range(len(self.epochs)-1, -1, -1):
             if self.epochs[i].accuracy == self.max_accuracy:
                 return self.epochs[i]
 
@@ -125,24 +125,24 @@ class TrainingLog:
     def is_trained(self) -> bool:
         return len(self.epochs) > 0 and self.max_accuracy > 0
 
-    def save(self, root_path):
+    def save(self, root_path, file_format):
         if os.path.exists(root_path):
             shutil.rmtree(root_path)
             os.mkdir(root_path)
         else:
             os.mkdir(root_path)
 
-        np.savez(os.path.join(root_path, f'max_accuracy.npz'), self.max_accuracy)
+        np.save(os.path.join(root_path, f'max_accuracy.{file_format}'), self.max_accuracy)
 
         for i in range(len(self.epochs)):
             layer_path = os.path.join(root_path, f'epoch_{i}')
-            self.epochs[i].save(layer_path)
+            self.epochs[i].save(layer_path, file_format)
 
-    def load(self, root_path):
+    def load(self, root_path, file_format):
         if os.path.exists(root_path):
             self.epochs = []
 
-            with np.load(os.path.join(root_path, f'max_accuracy.npz')) as loaded:
+            with np.load(os.path.join(root_path, f'max_accuracy.{file_format}')) as loaded:
                 self.max_accuracy = float(loaded['arr_0'])
 
             files = os.listdir(root_path)
@@ -153,7 +153,7 @@ class TrainingLog:
                 epoch_path = os.path.join(root_path, f)
                 if os.path.isdir(epoch_path):
                     epoch = EpochLog(i)
-                    epoch.load(epoch_path)
+                    epoch.load(epoch_path, file_format)
                     self.epochs.append(epoch)
                     i += 1
 
@@ -188,10 +188,10 @@ class NeuralNetwork:
         return os.path.exists(root_path)
 
     def _save(self, root_path):
-        self.training_log.save(root_path)
+        self.training_log.save(root_path, 'npy')
 
     def _load(self, root_path):
-        self.training_log.load(root_path)
+        self.training_log.load(root_path, 'npy')
         epoch = self.training_log.get_best_epoch()
         self._configuration.weights = epoch.W
         self._configuration.biases = epoch.B
@@ -389,7 +389,7 @@ class NeuralNetwork:
 
         # Initialize the auxiliary variables
         max_accuracy = 0.1
-        max_no_improvement_epochs = 5
+        max_no_improvement_epochs = 10
         no_improvement_epochs_counter = 0
 
         # Iterate over epochs

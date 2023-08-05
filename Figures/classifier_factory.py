@@ -37,7 +37,7 @@ class ClassifierFactory:
         test_min_angle = train_min_angle
         test_max_angle = train_max_angle
         test_angle_precision = train_angle_precision * 2.5
-        test_distortion_percentage = 10
+        test_distortion_percentage = 5
         test_save_plots = save_plots
         self.test_dataset_config = DatasetGeneratorConfiguration(f'{self.dimensions_size}_{test_min_scale}_{test_max_scale}_{test_scale_precision}_{test_min_angle}_{test_max_angle}_{test_angle_precision}_{test_distortion_percentage}',
                                                                  os.path.join(self.root_path, 'datasets'),
