@@ -135,8 +135,8 @@ print("Ellipse accuracy: ", ellipse_classifier.training_log.max_accuracy)
 # Create figure and axis
 fig, ax = plt.subplots()
 plt.subplots_adjust(bottom=0.2)
-ax.set_xlim(0, dimensions_size * 10)
-ax.set_ylim(0, dimensions_size * 10)
+ax.set_xlim(0, dimensions_size * 4)
+ax.set_ylim(0, dimensions_size * 4)
 ax.invert_yaxis()
 
 # Create a button
