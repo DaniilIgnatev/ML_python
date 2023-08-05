@@ -2,3 +2,5 @@
 parameters/
 datasets/
 *.pyc
+build/
+dist/

@@ -60,7 +60,7 @@ min_scale=1.0
 max_scale=3.0
 scale_precision=0.25
 angle_precision=15
-distortion_percentage=3
+distortion_percentage=0
 save_plots=False
 
 optimizer_alpha=0.01
@@ -170,11 +170,12 @@ def on_motion(event):
     global is_pressed
     if is_pressed:
         # print('on_motion')
-        if event.xdata > 1 and event.ydata > 1:
-            xdata.append(event.xdata)
-            ydata.append(event.ydata)
-            line.set_data(xdata, ydata)
-            fig.canvas.draw()
+        if event.xdata:
+            if event.xdata > 1 and event.ydata > 1:
+                xdata.append(event.xdata)
+                ydata.append(event.ydata)
+                line.set_data(xdata, ydata)
+                fig.canvas.draw()
 
 
 # Mouse button release event
@@ -186,6 +187,9 @@ def on_release(event):
 
 def process_data(event):
     print('process_data')
+
+    global is_pressed
+    is_pressed = False
 
     global dimensions_size
     global xdata, ydata
@@ -250,7 +254,7 @@ def process_data(event):
         print(f'n: {noise_p}; l:{line_p}; t:{triangle_p}; r:{rectangle_p}; e:{ellipse_p}')
 
         P = [noise_p, line_p, triangle_p, rectangle_p, ellipse_p]
-        soft_max_p = softmax()
+        soft_max_p = softmax(P)
         print(f'soft_max: {soft_max_p}')
 
         labels = ['Noise', 'Line', 'Triangle', 'Rectangle', 'Ellipse']
@@ -262,6 +266,9 @@ def process_data(event):
 
 
 def clear_plot(event):
+    global is_pressed
+    is_pressed = False
+
     global xdata, ydata
     xdata = []
     ydata = []
