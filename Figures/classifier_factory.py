@@ -48,7 +48,7 @@ class ClassifierFactory:
         optimizer_beta = optimizer_beta
         optimizer_record = True
 
-        self.optimizer_configuration = OptimizerConfiguration(optimizer_name, alpha=optimizer_alpha, beta=optimizer_beta, record=optimizer_record)
+        self.optimizer_configuration = OptimizerConfiguration(optimizer_name, alpha=optimizer_alpha, beta1=optimizer_beta, record=optimizer_record)
 
         nn_h1 = nn_h1
         nn_h2 = nn_h2
@@ -60,7 +60,7 @@ class ClassifierFactory:
         self.nn_config = NeuralNetworkConfiguration(sizes=[self.dimensions_size**2, nn_h1, nn_h2, 1], lambda_l1=nn_l1, lambda_l2=nn_l2,
                                                     optimizer_configuration=self.optimizer_configuration, mini_batch_size=nn_mini_batch_size, output=nn_output)
 
-        c_config = ClassifierConfiguration(f'{self.dimensions_size}_{target_name.name}_{self.nn_config.sizes[1]}_{self.nn_config.sizes[2]}_{self.nn_config.lambda_l1}_{self.nn_config.lambda_l2}_{self.nn_config.mini_batch_size}_{self.optimizer_configuration.name}_{self.optimizer_configuration.alpha}_{self.optimizer_configuration.beta}',
+        c_config = ClassifierConfiguration(f'{self.dimensions_size}_{target_name.name}_{self.nn_config.sizes[1]}_{self.nn_config.sizes[2]}_{self.nn_config.lambda_l1}_{self.nn_config.lambda_l2}_{self.nn_config.mini_batch_size}_{self.optimizer_configuration.name}_{self.optimizer_configuration.alpha}_{self.optimizer_configuration.beta1}',
                                            os.path.join(self.root_path, 'parameters'),
                                            target_name, self.dimensions_size, self.train_dataset_config, self.test_dataset_config, self.nn_config)
 
