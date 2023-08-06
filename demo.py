@@ -29,22 +29,24 @@ print(root_path)
 
 c_factory = ClassifierFactory(dimensions_size, root_path)
 
+# mini_dataset
 # min_scale=1.0
 # max_scale=3.0
-# scale_precision=0.5
-# angle_precision=30
-# distortion_percentage=10
-# save_plots=False
+# scale_precision=1.0
+# angle_precision=45
+# distortion_percentage=5
+# save_plots=True
 #
 # optimizer_alpha=0.01
 # optimizer_beta=0.9
 #
-# nn_h1=50
+# nn_h1=100
 # nn_h2=10
-# nn_l1=0.0
-# nn_l2=10
+# nn_l1=0.001
+# nn_l2=0.1
 
-# min_scale=1.0
+# high distortion
+# min_scale=0.5
 # max_scale=3.0
 # scale_precision=0.25
 # angle_precision=15
@@ -59,20 +61,37 @@ c_factory = ClassifierFactory(dimensions_size, root_path)
 # nn_l1=0.01
 # nn_l2=10
 
-min_scale=1.0
+#main_dataset
+# min_scale=0.5
+# max_scale=3.0
+# scale_precision=0.25
+# angle_precision=15
+# distortion_percentage=2
+# save_plots=False
+#
+# optimizer_alpha=0.01
+# optimizer_beta=0.9
+#
+# nn_h1=100
+# nn_h2=10
+# nn_l1=0.0
+# nn_l2=0.0
+
+#попробовать это
+min_scale=0.5
 max_scale=3.0
 scale_precision=0.25
 angle_precision=15
-distortion_percentage=5
+distortion_percentage=2
 save_plots=False
 
-optimizer_alpha=0.001
+optimizer_alpha=0.01#если плохо, то 0.001
 optimizer_beta=0.9
 
 nn_h1=100
 nn_h2=10
-nn_l1=0.001
-nn_l2=0.1
+nn_l1=0.0
+nn_l2=0.001
 
 noise_classifier = c_factory.get_classifier(FiguresEnum.NOISE,
                                             min_scale=min_scale, max_scale=max_scale, scale_precision=scale_precision, angle_precision=angle_precision,
@@ -86,12 +105,17 @@ if not noise_classifier.is_trained():
 else:
     print('loading the noise_classifier')
 
-# line_classifier = c_factory.get_classifier(FiguresEnum.LINE)
-# if not line_classifier.is_trained():
-#     print(f'training the line_classifier')
-#     line_classifier.train_classifier()
-# else:
-#     print('loading the line_classifier')
+line_classifier = c_factory.get_classifier(FiguresEnum.LINE,
+                                           min_scale=min_scale, max_scale=max_scale, scale_precision=scale_precision, angle_precision=angle_precision,
+                                           distortion_percentage=distortion_percentage, save_plots=save_plots,
+                                           optimizer_alpha=optimizer_alpha, optimizer_beta=optimizer_beta,
+                                           nn_h1=nn_h1, nn_h2=nn_h2, nn_l1=nn_l1, nn_l2=nn_l2
+                                           )
+if not line_classifier.is_trained():
+    print(f'training the line_classifier')
+    line_classifier.train_classifier()
+else:
+    print('loading the line_classifier')
 
 triangle_classifier = c_factory.get_classifier(FiguresEnum.TRIANGLE,
                                                min_scale=min_scale, max_scale=max_scale, scale_precision=scale_precision, angle_precision=angle_precision,
@@ -130,7 +154,7 @@ else:
     print('loading the ellipse_classifier')
 
 print("Noise accuracy: ", noise_classifier.training_log.max_accuracy)
-# print("Line accuracy: ", line_classifier.training_log.max_accuracy)
+print("Line accuracy: ", line_classifier.training_log.max_accuracy)
 print("Triangle accuracy: ", triangle_classifier.training_log.max_accuracy)
 print("Rectangle accuracy: ", rectangle_classifier.training_log.max_accuracy)
 print("Ellipse accuracy: ", ellipse_classifier.training_log.max_accuracy)
@@ -138,8 +162,8 @@ print("Ellipse accuracy: ", ellipse_classifier.training_log.max_accuracy)
 # Create figure and axis
 fig, ax = plt.subplots()
 plt.subplots_adjust(bottom=0.2)
-ax.set_xlim(0, dimensions_size * 4)
-ax.set_ylim(0, dimensions_size * 4)
+ax.set_xlim(0, dimensions_size * 10)
+ax.set_ylim(0, dimensions_size * 10)
 ax.invert_yaxis()
 
 # Create a button
@@ -249,7 +273,7 @@ def process_data(event):
 
     if len(data.points) > 1:
         noise_p = noise_classifier.classify(x, y)
-        line_p = 0#line_classifier.classify(x, y)
+        line_p = line_classifier.classify(x, y)
         triangle_p = triangle_classifier.classify(x, y)
         rectangle_p = rectangle_classifier.classify(x, y)
         ellipse_p = ellipse_classifier.classify(x, y)
@@ -295,7 +319,3 @@ process_button.on_clicked(process_data)
 clear_button.on_clicked(clear_plot)
 
 plt.show()
-
-
-
-#%%

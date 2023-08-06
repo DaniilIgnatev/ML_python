@@ -67,7 +67,11 @@ class EpochLog:
         else:
             os.mkdir(root_path)
 
-        np.save(os.path.join(root_path, f'accuracy.{file_format}'), self.accuracy)
+        file_path = os.path.join(root_path, f'accuracy.{file_format}')
+        if file_format == 'txt':
+            np.savetxt(file_path, np.array([self.accuracy]), fmt='%.8f')
+        else:
+            np.save(file_path, self.accuracy)
 
         layers_number = len(self.W)
 
@@ -79,16 +83,26 @@ class EpochLog:
             else:
                 os.mkdir(layer_path)
 
-            np.save(os.path.join(layer_path, f'W.{file_format}'), np.array(self.W[i]))
-            np.save(os.path.join(layer_path, f'B.{file_format}'), np.array(self.B[i]))
+            W_path = os.path.join(layer_path, f'W.{file_format}')
+            B_path = os.path.join(layer_path, f'B.{file_format}')
+            if file_format == 'txt':
+                np.savetxt(W_path, np.array(self.W[i]), fmt='%.8f')
+                np.savetxt(B_path, np.array(self.B[i]), fmt='%.8f')
+            else:
+                np.save(W_path, np.array(self.W[i]))
+                np.save(B_path, np.array(self.B[i]))
 
     def load(self, root_path, file_format):
         if os.path.exists(root_path):
             self.W = []
             self.B = []
 
-            with np.load(os.path.join(root_path, f'accuracy.{file_format}')) as loaded:
-                self.accuracy = float(loaded['arr_0'])
+            file_path = os.path.join(root_path, f'accuracy.{file_format}')
+            if file_format == 'txt':
+                self.accuracy = float(np.loadtxt(file_path))
+            else:
+                with np.load(file_path) as loaded:
+                    self.accuracy = float(loaded['arr_0'])
 
             files = os.listdir(root_path)
             files.sort()
@@ -98,12 +112,19 @@ class EpochLog:
 
                 if os.path.isdir(layer_path):
                     W_path = os.path.join(layer_path, f'W.{file_format}')
-                    with np.load(W_path) as loaded:
-                        self.W.append(loaded['arr_0'])
-
                     B_path = os.path.join(layer_path, f'B.{file_format}')
-                    with np.load(B_path) as loaded:
-                        self.B.append(loaded['arr_0'])
+
+                    if file_format == 'txt':
+                        w = np.loadtxt(W_path)
+                        self.W.append(w)
+                        b = np.matrix(np.loadtxt(B_path)).T
+                        self.B.append(b)
+                    else:
+                        with np.load(W_path) as loaded:
+                            self.W.append(loaded['arr_0'])
+
+                        with np.load(B_path) as loaded:
+                            self.B.append(loaded['arr_0'])
 
 
 class TrainingLog:
@@ -132,30 +153,48 @@ class TrainingLog:
         else:
             os.mkdir(root_path)
 
-        np.save(os.path.join(root_path, f'max_accuracy.{file_format}'), self.max_accuracy)
+        # file_path = os.path.join(root_path, f'max_accuracy.{file_format}')
+        # if file_format == 'txt':
+        #     np.savetxt(file_path, np.array([self.max_accuracy]), fmt='%.8f')
+        # else:
+        #     np.save(file_path, self.max_accuracy)
+        #
+        # for i in range(len(self.epochs)):
+        #     layer_path = os.path.join(root_path, f'epoch_{i}')
+        #     self.epochs[i].save(layer_path, file_format)
 
-        for i in range(len(self.epochs)):
-            layer_path = os.path.join(root_path, f'epoch_{i}')
-            self.epochs[i].save(layer_path, file_format)
+        best_epoch = self.get_best_epoch()
+        best_epoch.save(os.path.join(root_path, 'best_epoch'), 'txt')
 
     def load(self, root_path, file_format):
         if os.path.exists(root_path):
             self.epochs = []
 
-            with np.load(os.path.join(root_path, f'max_accuracy.{file_format}')) as loaded:
-                self.max_accuracy = float(loaded['arr_0'])
+            # file_path = os.path.join(root_path, f'max_accuracy.{file_format}')
+            # if file_format == 'txt':
+            #     self.max_accuracy = float(np.loadtxt(file_path))
+            # else:
+            #     with np.load(file_path) as loaded:
+            #         self.max_accuracy = float(loaded['arr_0'])
+            #
+            # files = os.listdir(root_path)
+            # files.sort()
+            #
+            # i = 0
+            # for f in files:
+            #     epoch_path = os.path.join(root_path, f)
+            #     if os.path.isdir(epoch_path):
+            #         epoch = EpochLog(i)
+            #         epoch.load(epoch_path, file_format)
+            #         self.epochs.append(epoch)
+            #         i += 1
 
-            files = os.listdir(root_path)
-            files.sort()
-
-            i = 0
-            for f in files:
-                epoch_path = os.path.join(root_path, f)
-                if os.path.isdir(epoch_path):
-                    epoch = EpochLog(i)
-                    epoch.load(epoch_path, file_format)
-                    self.epochs.append(epoch)
-                    i += 1
+            best_epoch_path = os.path.join(root_path, 'best_epoch')
+            if os.path.isdir(best_epoch_path):
+                best_epoch = EpochLog(0)
+                best_epoch.load(best_epoch_path, file_format)
+                self.epochs.append(best_epoch)
+                self.max_accuracy = best_epoch.accuracy
 
 
 class NeuralNetwork:
@@ -188,10 +227,10 @@ class NeuralNetwork:
         return os.path.exists(root_path)
 
     def _save(self, root_path):
-        self.training_log.save(root_path, 'npy')
+        self.training_log.save(root_path, 'txt')
 
     def _load(self, root_path):
-        self.training_log.load(root_path, 'npy')
+        self.training_log.load(root_path, 'txt')
         epoch = self.training_log.get_best_epoch()
         self._configuration.weights = epoch.W
         self._configuration.biases = epoch.B
@@ -216,7 +255,8 @@ class NeuralNetwork:
         Returns:
             A sigmoid derivative value of the function a
         """
-        return sigmoid_a * (1 - sigmoid_a)
+
+        return np.multiply(sigmoid_a, (1 - sigmoid_a))
 
     def forward_pass(self, x, return_lists=False):
         """
