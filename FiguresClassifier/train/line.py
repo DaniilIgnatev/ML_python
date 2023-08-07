@@ -21,6 +21,8 @@ line_classifier = c_factory.get_classifier(FiguresEnum.LINE,
                                            min_scale=min_scale, max_scale=max_scale, scale_precision=scale_precision, angle_precision=angle_precision,
                                            distortion_percentage=distortion_medium, save_plots=save_plots,
                                            optimizer_alpha=optimizer_alpha, optimizer_beta=optimizer_beta,
-                                           nn_h1=nn_h1, nn_h2=nn_h2, nn_l1=0, nn_l2=0.1
+                                           nn_h1=nn_h1, nn_h2=nn_h2, nn_l1=0, nn_l2=0.01
                                            )
 line_classifier.train_classifier()
+
+#%%

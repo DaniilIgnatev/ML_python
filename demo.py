@@ -39,61 +39,25 @@ c_factory = ClassifierFactory(dimensions_size, root_path)
 # nn_l1=0.001
 # nn_l2=0.1
 
-# high distortion
-# min_scale=0.5
-# max_scale=3.0
-# scale_precision=0.25
-# angle_precision=15
-# distortion_percentage=10
-# save_plots=False
-#
-# optimizer_alpha=0.01
-# optimizer_beta=0.9
-#
-# nn_h1=100
-# nn_h2=10
-# nn_l1=0.01
-# nn_l2=10
-
-#main_dataset путает прямоугольник и элипс
-min_scale=0.5
-max_scale=3.0
-scale_precision=0.25
-angle_precision=15
-distortion_small=2
-distortion_medium=5
-distortion_high=10
-save_plots=False
-
-optimizer_alpha=0.01
-optimizer_beta=0.9
-
-nn_h1=100
-nn_h2=10
-
-# путает треугольник и прямоугольник
-# min_scale=0.5
-# max_scale=3.0
-# scale_precision=0.25
-# angle_precision=15
-# distortion_percentage=2
-# save_plots=False
-#
-# optimizer_alpha=0.01#если плохо, то 0.001
-# optimizer_beta=0.9
-#
-# nn_h1=100
-# nn_h2=10
-# nn_l1=0.0
-# nn_l2=0.001
-
-
+#main dataset
+from FiguresClassifier.train.common_parameters import min_scale
+from FiguresClassifier.train.common_parameters import max_scale
+from FiguresClassifier.train.common_parameters import scale_precision
+from FiguresClassifier.train.common_parameters import angle_precision
+from FiguresClassifier.train.common_parameters import distortion_small
+from FiguresClassifier.train.common_parameters import distortion_medium
+from FiguresClassifier.train.common_parameters import distortion_high
+from FiguresClassifier.train.common_parameters import save_plots
+from FiguresClassifier.train.common_parameters import optimizer_alpha
+from FiguresClassifier.train.common_parameters import optimizer_beta
+from FiguresClassifier.train.common_parameters import nn_h1
+from FiguresClassifier.train.common_parameters import nn_h2
 
 noise_classifier = c_factory.get_classifier(FiguresEnum.NOISE,
                                             min_scale=min_scale, max_scale=max_scale, scale_precision=scale_precision, angle_precision=angle_precision,
-                                            distortion_percentage=distortion_small, save_plots=save_plots,
+                                            distortion_percentage=distortion_high, save_plots=save_plots,
                                             optimizer_alpha=optimizer_alpha, optimizer_beta=optimizer_beta,
-                                            nn_h1=nn_h1, nn_h2=nn_h2, nn_l1=0, nn_l2=0.1
+                                            nn_h1=nn_h1, nn_h2=nn_h2, nn_l1=0, nn_l2=0.01
                                             )
 if not noise_classifier.is_trained():
     print(f'training the noise_classifier')
@@ -103,9 +67,9 @@ else:
 
 line_classifier = c_factory.get_classifier(FiguresEnum.LINE,
                                            min_scale=min_scale, max_scale=max_scale, scale_precision=scale_precision, angle_precision=angle_precision,
-                                           distortion_percentage=distortion_small, save_plots=save_plots,
+                                           distortion_percentage=distortion_medium, save_plots=save_plots,
                                            optimizer_alpha=optimizer_alpha, optimizer_beta=optimizer_beta,
-                                           nn_h1=nn_h1, nn_h2=nn_h2, nn_l1=0, nn_l2=0.1
+                                           nn_h1=nn_h1, nn_h2=nn_h2, nn_l1=0, nn_l2=0.01
                                            )
 if not line_classifier.is_trained():
     print(f'training the line_classifier')
@@ -115,9 +79,9 @@ else:
 
 triangle_classifier = c_factory.get_classifier(FiguresEnum.TRIANGLE,
                                                min_scale=min_scale, max_scale=max_scale, scale_precision=scale_precision, angle_precision=angle_precision,
-                                               distortion_percentage=distortion_small, save_plots=save_plots,
+                                               distortion_percentage=distortion_medium, save_plots=save_plots,
                                                optimizer_alpha=optimizer_alpha, optimizer_beta=optimizer_beta,
-                                               nn_h1=nn_h1, nn_h2=nn_h2, nn_l1=0, nn_l2=0.1
+                                               nn_h1=nn_h1, nn_h2=nn_h2, nn_l1=0, nn_l2=0.01
                                                )
 if not triangle_classifier.is_trained():
     print(f'training the triangle_classifier')
@@ -127,9 +91,9 @@ else:
 
 rectangle_classifier = c_factory.get_classifier(FiguresEnum.RECTANGLE,
                                                 min_scale=min_scale, max_scale=max_scale, scale_precision=scale_precision, angle_precision=angle_precision,
-                                                distortion_percentage=distortion_small, save_plots=save_plots,
+                                                distortion_percentage=distortion_medium, save_plots=save_plots,
                                                 optimizer_alpha=optimizer_alpha, optimizer_beta=optimizer_beta,
-                                                nn_h1=nn_h1, nn_h2=nn_h2, nn_l1=0, nn_l2=0
+                                                nn_h1=nn_h1, nn_h2=nn_h2, nn_l1=0, nn_l2=0.01
                                                 )
 if not rectangle_classifier.is_trained():
     print(f'training the rectangle_classifier')

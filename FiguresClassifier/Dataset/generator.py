@@ -131,6 +131,19 @@ class DatasetGenerator:
                         if not data.is_empty():
                             figures.append(data)
 
+                        data = figure.draw(scale_x, scale_y, angle)
+                        y_offset = np.random.random(data.y.size) * (self.__configuration.dimensions_size * self.__configuration.distortion_percentage / 2 / 100)
+                        y = data.y + y_offset
+                        data.set_xy(data.x, y)
+
+                        data.shift_to_zero()
+                        data.scale_to_fit()
+                        data.clip()
+                        data.simplify()
+
+                        if not data.is_empty():
+                            figures.append(data)
+
                 angle_start = angle_start + angle_offset
                 if angle_start >= 360:
                     angle_start -= 360

@@ -15,7 +15,7 @@ max_scale = 3.0
 scale_precision = 0.25
 angle_precision = 15
 distortion_small = 2
-distortion_medium = 5
+distortion_medium = 6
 distortion_high = 10
 save_plots = False
 
