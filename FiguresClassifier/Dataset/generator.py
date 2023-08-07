@@ -1,52 +1,9 @@
 import numpy as np
 import os
-import pandas as pd
 
-from Figures.figures import FiguresEnum
-from Figures.figures import registered_figures
-from Figures.figures import FigureGenerator
-from Figures.figures import FigureData
-
-
-class DatasetFigure:
-    def __init__(self, dataset_name: str, figure_name: FiguresEnum, dimensions_size: int, figures_data=None):
-        self.dataset_name = dataset_name
-        self.figure_name = figure_name
-        self.dimensions_size = dimensions_size
-        self.figures_data = figures_data
-
-    def save(self, root_path: str):
-        if self.figures_data is None:
-            return
-
-        if os.path.exists(root_path):
-            for i in range(len(self.figures_data)):
-                figure_data = self.figures_data[i]
-                csv_path = os.path.join(root_path, f'{i}.csv')
-
-                df = pd.DataFrame(figure_data.points, columns=['X', 'Y'])
-                df.to_csv(csv_path)
-
-    def load(self, root_path: str):
-        self.figures_data = []
-
-        if os.path.exists(root_path):
-            files = os.listdir(root_path)
-            files = [file for file in files if file.endswith('.csv')]
-
-            for i in range(len(files)):
-                file_path = os.path.join(root_path, files[i])
-                df = pd.read_csv(file_path)
-                points = df.to_numpy()[:, 1:]
-                data = FigureData(self.figure_name, self.dimensions_size, points=points)
-                self.figures_data.append(data)
-
-    def save_plot(self, root_path: str):
-        if os.path.exists(root_path):
-            for i in range(len(self.figures_data)):
-                image_path = os.path.join(root_path, f'{i}.png')
-                figure_data = self.figures_data[i]
-                figure_data.plot(save_to=image_path)
+from FiguresClassifier.Figures.generator import registered_generators
+from FiguresClassifier.Figures.generator import FigureGenerator
+from FiguresClassifier.Dataset.figure import FigureDataset
 
 
 class DatasetGeneratorConfiguration:
@@ -79,7 +36,7 @@ class DatasetGeneratorConfiguration:
 class DatasetGenerator:
     def __init__(self, configuration: DatasetGeneratorConfiguration):
         self.__configuration = configuration
-        self.figures = registered_figures
+        self.figures = registered_generators
         self.root_path = os.path.join(configuration.path, self.__configuration.name)
 
         # self._print_size()
@@ -107,7 +64,7 @@ class DatasetGenerator:
                 )
             )
 
-            figure_dataset = DatasetFigure(self.__configuration.name, figure_name, self.__configuration.dimensions_size)
+            figure_dataset = FigureDataset(self.__configuration.name, figure_name, self.__configuration.dimensions_size)
             figure_dataset.load(folder_path)
             self.dataset[figure_name] = figure_dataset
 
@@ -136,7 +93,7 @@ class DatasetGenerator:
 
             figure_dataset.save_plot(folder_path)
 
-    def __generate_single(self, figure: FigureGenerator) -> DatasetFigure:
+    def __generate_single(self, figure: FigureGenerator) -> FigureDataset:
         figures = []
 
         angle_start = self.__configuration.min_angle
@@ -182,7 +139,7 @@ class DatasetGenerator:
                 if angle_stop >= 720:
                     angle_stop -= 360
 
-        return DatasetFigure(self.__configuration.name, figure.name, self.__configuration.dimensions_size, figures)
+        return FigureDataset(self.__configuration.name, figure.name, self.__configuration.dimensions_size, figures)
 
     def __generate_all(self):
         for figure_key in self.figures:

@@ -1,20 +1,15 @@
 import os
 import numpy as np
 
-from Figures.train_data import DatasetGenerator
-from Figures.train_data import DatasetGeneratorConfiguration
-from Figures.train_data import DatasetFigure
-from Figures.figures import FigureData
-from Figures.figures import FiguresEnum
+from FiguresClassifier.Dataset.generator import DatasetGenerator
+from FiguresClassifier.Dataset.generator import FigureDataset
+from FiguresClassifier.Figures.generator import FigureData
 from NN.neural_network import NeuralNetwork
-from NN.neural_network import NeuralNetworkConfiguration
 
 
-from Figures.train_data import DatasetGeneratorConfiguration
-from Figures.figures import FiguresEnum
+from FiguresClassifier.Dataset.generator import DatasetGeneratorConfiguration
+from FiguresClassifier.Figures.generator import FiguresEnum
 from NN.neural_network import NeuralNetworkConfiguration
-from NN.optimizer import OptimizerConfiguration
-from NN.optimizer import OptimizerEnum
 
 
 class ClassifierConfiguration:
@@ -65,12 +60,12 @@ class Classifier(NeuralNetwork):
             data[index] = 1
         return data, y
 
-    def __train_data_from_figure(self, figure_dataset: DatasetFigure):
+    def __train_data_from_figure(self, figure_dataset: FigureDataset):
         for figure_data in figure_dataset.figures_data:
             sample = self.data_from_figure_data(figure_data)
             self.__samples_train.append(sample)
 
-    def __test_data_from_figure(self, figure_dataset: DatasetFigure):
+    def __test_data_from_figure(self, figure_dataset: FigureDataset):
         for figure_data in figure_dataset.figures_data:
             sample = self.data_from_figure_data(figure_data)
             self.__samples_test.append(sample)

@@ -2,15 +2,9 @@ import os
 import sys
 import random
 import numpy as np
-from Figures.classifier import ClassifierConfiguration
-from Figures.classifier import Classifier
-from Figures.classifier_factory import ClassifierFactory
-from Figures.train_data import DatasetGeneratorConfiguration
-from Figures.figures import FiguresEnum
-from NN.neural_network import NeuralNetworkConfiguration
-from NN.optimizer import OptimizerConfiguration
-from NN.optimizer import OptimizerEnum
-from Figures.figures import FigureData
+from FiguresClassifier.Classifier.classifier_factory import ClassifierFactory
+from FiguresClassifier.Figures.data import FiguresEnum
+from FiguresClassifier.Figures.data import FigureData
 
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Button, TextBox
@@ -24,8 +18,8 @@ if getattr(sys, 'frozen', False):
     root_path = os.path.dirname(sys.executable)
 else:
     root_path = os.path.abspath(os.getcwd())
-# root_path = 'C:\\Users\\Daniil\\Desktop\\FiguresClassifier'
-print(root_path)
+root_path = os.path.join(root_path, 'FiguresClassifier/save')
+print(f'root_path: {root_path}')
 
 c_factory = ClassifierFactory(dimensions_size, root_path)
 
@@ -61,7 +55,23 @@ c_factory = ClassifierFactory(dimensions_size, root_path)
 # nn_l1=0.01
 # nn_l2=10
 
-#main_dataset
+#main_dataset путает прямоугольник и элипс
+min_scale=0.5
+max_scale=3.0
+scale_precision=0.25
+angle_precision=15
+distortion_small=2
+distortion_medium=5
+distortion_high=10
+save_plots=False
+
+optimizer_alpha=0.01
+optimizer_beta=0.9
+
+nn_h1=100
+nn_h2=10
+
+# путает треугольник и прямоугольник
 # min_scale=0.5
 # max_scale=3.0
 # scale_precision=0.25
@@ -69,35 +79,21 @@ c_factory = ClassifierFactory(dimensions_size, root_path)
 # distortion_percentage=2
 # save_plots=False
 #
-# optimizer_alpha=0.01
+# optimizer_alpha=0.01#если плохо, то 0.001
 # optimizer_beta=0.9
 #
 # nn_h1=100
 # nn_h2=10
 # nn_l1=0.0
-# nn_l2=0.0
+# nn_l2=0.001
 
-#попробовать это
-min_scale=0.5
-max_scale=3.0
-scale_precision=0.25
-angle_precision=15
-distortion_percentage=2
-save_plots=False
 
-optimizer_alpha=0.01#если плохо, то 0.001
-optimizer_beta=0.9
-
-nn_h1=100
-nn_h2=10
-nn_l1=0.0
-nn_l2=0.001
 
 noise_classifier = c_factory.get_classifier(FiguresEnum.NOISE,
                                             min_scale=min_scale, max_scale=max_scale, scale_precision=scale_precision, angle_precision=angle_precision,
-                                            distortion_percentage=distortion_percentage, save_plots=save_plots,
+                                            distortion_percentage=distortion_small, save_plots=save_plots,
                                             optimizer_alpha=optimizer_alpha, optimizer_beta=optimizer_beta,
-                                            nn_h1=nn_h1, nn_h2=nn_h2, nn_l1=nn_l1, nn_l2=nn_l2
+                                            nn_h1=nn_h1, nn_h2=nn_h2, nn_l1=0, nn_l2=0.1
                                             )
 if not noise_classifier.is_trained():
     print(f'training the noise_classifier')
@@ -107,9 +103,9 @@ else:
 
 line_classifier = c_factory.get_classifier(FiguresEnum.LINE,
                                            min_scale=min_scale, max_scale=max_scale, scale_precision=scale_precision, angle_precision=angle_precision,
-                                           distortion_percentage=distortion_percentage, save_plots=save_plots,
+                                           distortion_percentage=distortion_small, save_plots=save_plots,
                                            optimizer_alpha=optimizer_alpha, optimizer_beta=optimizer_beta,
-                                           nn_h1=nn_h1, nn_h2=nn_h2, nn_l1=nn_l1, nn_l2=nn_l2
+                                           nn_h1=nn_h1, nn_h2=nn_h2, nn_l1=0, nn_l2=0.1
                                            )
 if not line_classifier.is_trained():
     print(f'training the line_classifier')
@@ -119,9 +115,9 @@ else:
 
 triangle_classifier = c_factory.get_classifier(FiguresEnum.TRIANGLE,
                                                min_scale=min_scale, max_scale=max_scale, scale_precision=scale_precision, angle_precision=angle_precision,
-                                               distortion_percentage=distortion_percentage, save_plots=save_plots,
+                                               distortion_percentage=distortion_small, save_plots=save_plots,
                                                optimizer_alpha=optimizer_alpha, optimizer_beta=optimizer_beta,
-                                               nn_h1=nn_h1, nn_h2=nn_h2, nn_l1=nn_l1, nn_l2=nn_l2
+                                               nn_h1=nn_h1, nn_h2=nn_h2, nn_l1=0, nn_l2=0.1
                                                )
 if not triangle_classifier.is_trained():
     print(f'training the triangle_classifier')
@@ -131,9 +127,9 @@ else:
 
 rectangle_classifier = c_factory.get_classifier(FiguresEnum.RECTANGLE,
                                                 min_scale=min_scale, max_scale=max_scale, scale_precision=scale_precision, angle_precision=angle_precision,
-                                                distortion_percentage=distortion_percentage, save_plots=save_plots,
+                                                distortion_percentage=distortion_small, save_plots=save_plots,
                                                 optimizer_alpha=optimizer_alpha, optimizer_beta=optimizer_beta,
-                                                nn_h1=nn_h1, nn_h2=nn_h2, nn_l1=nn_l1, nn_l2=nn_l2
+                                                nn_h1=nn_h1, nn_h2=nn_h2, nn_l1=0, nn_l2=0
                                                 )
 if not rectangle_classifier.is_trained():
     print(f'training the rectangle_classifier')
@@ -143,9 +139,9 @@ else:
 
 ellipse_classifier = c_factory.get_classifier(FiguresEnum.ELLIPSE,
                                               min_scale=min_scale, max_scale=max_scale, scale_precision=scale_precision, angle_precision=angle_precision,
-                                              distortion_percentage=distortion_percentage, save_plots=save_plots,
+                                              distortion_percentage=distortion_small, save_plots=save_plots,
                                               optimizer_alpha=optimizer_alpha, optimizer_beta=optimizer_beta,
-                                              nn_h1=nn_h1, nn_h2=nn_h2, nn_l1=nn_l1, nn_l2=nn_l2
+                                              nn_h1=nn_h1, nn_h2=nn_h2, nn_l1=0, nn_l2=0
                                               )
 if not ellipse_classifier.is_trained():
     print(f'training the ellipse_classifier')
@@ -184,6 +180,7 @@ xdata = []
 ydata = []
 is_pressed = False
 
+data = FigureData(FiguresEnum.NOISE, dimensions_size)
 
 # Mouse button press event
 def on_press(event):
@@ -229,7 +226,9 @@ def process_data(event):
     mask_y = y > 1
     y = y[mask_y]
 
-    data = FigureData(FiguresEnum.NOISE, dimensions_size, x, y)
+    global data
+
+    data.set_xy(x, y)
     data.shift_to_zero()
     data.scale_to_fit()
     x = data.x
@@ -319,3 +318,5 @@ process_button.on_clicked(process_data)
 clear_button.on_clicked(clear_plot)
 
 plt.show()
+
+#%%
