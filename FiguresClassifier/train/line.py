@@ -18,10 +18,10 @@ from FiguresClassifier.train.common_parameters import nn_h2
 
 
 line_classifier = c_factory.get_classifier(FiguresEnum.LINE,
-                                           min_scale=1, max_scale=1, scale_precision=1, angle_precision=20,
-                                           distortion_percentage=distortion_medium, save_plots=False,
+                                           min_scale=min_scale, max_scale=max_scale, scale_precision=scale_precision, angle_precision=angle_precision,
+                                           distortion_percentage=distortion_high, save_plots=False,
                                            optimizer_alpha=optimizer_alpha, optimizer_beta=optimizer_beta,
-                                           nn_h1=nn_h1, nn_h2=nn_h2, nn_l1=0.0, nn_l2=0.01
+                                           nn_h1=nn_h1, nn_h2=nn_h2, nn_l1=0, nn_l2=0.01
                                            )
 
 if __name__ == "__main__":

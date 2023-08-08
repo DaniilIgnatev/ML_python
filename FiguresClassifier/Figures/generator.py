@@ -52,11 +52,11 @@ class FigureGenerator:
 
             data.distortion(distortion_percentage)
 
-        if self.clip_points:
-            data.clip()
-
         if self.filter:
             data.filter()
+
+        if self.clip_points:
+            data.clip()
 
         return data
 
@@ -225,13 +225,16 @@ class EllipseGenerator(FigureGenerator):
             data.scale_to_fit()
 
         if distortion_percentage > 0:
-            data.distortion(distortion_percentage)
+            if self.filter:
+                data.filter()
 
-        if self.clip_points:
-            data.clip()
+            data.distortion(distortion_percentage)
 
         if self.filter:
             data.filter()
+
+        if self.clip_points:
+            data.clip()
 
         points = np.array(_quicksort(data.points))
         data.set_points(points)
@@ -272,8 +275,9 @@ class NoiseGenerator(FigureGenerator):
 
     def draw(self, scale_x, scale_y, angle, distortion_percentage) -> FigureData:
         s = int((np.random.random() + 0.0) * self.dimensions_size * 10)
-        if s < self.dimensions_size / 4:
-            s = self.dimensions_size / 4
+        min_s = int(self.dimensions_size / 4)
+        if s < min_s:
+            s = min_s
 
         x = np.random.normal(loc=0.5, scale=1, size=s)
         y = np.random.normal(loc=0.5, scale=1, size=s)
@@ -288,7 +292,8 @@ class NoiseGenerator(FigureGenerator):
         if self.clip_points:
             data.clip()
 
-        data.filter()
+        if self.filter:
+            data.filter()
 
         return data
 
@@ -328,7 +333,7 @@ if __name__ == "__main__":
     samples = 10
     line_generator = LineGenerator(size)
     for i in range(samples):
-        data = line_generator.draw(samples - i, i + 1, 20 * i, 10)
+        data = line_generator.draw(samples - i, i + 1, 20 * i, 25)
         data.plot([0, size], [0, size])
 
     #%%
@@ -351,5 +356,4 @@ if __name__ == "__main__":
     for i in range(samples):
         data = ellipse_generator.draw(samples - i, i + 1, 20 * i, 10)
         data.plot([0, size], [0, size])
-
 #%%

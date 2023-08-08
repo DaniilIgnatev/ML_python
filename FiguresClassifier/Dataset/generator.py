@@ -108,7 +108,7 @@ class DatasetGenerator:
                 for angle in np.linspace(angle_start, angle_stop,
                                          int((self.__configuration.max_angle - self.__configuration.min_angle) / self.__configuration.angle_precision) + 1,
                                          endpoint=True):
-                    data = figure.draw(scale_x, scale_y, angle)
+                    data = figure.draw(scale_x, scale_y, angle, 0)
                     data.simplify(0.8)
                     if not data.is_empty():
                         figures.append(data)

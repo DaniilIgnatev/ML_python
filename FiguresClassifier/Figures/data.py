@@ -229,3 +229,4 @@ class FigureData:
         y_offset = np.random.random(self.y.size) * (self.dimensions_size * percentage / 100)
         y = self.y + y_offset
         self.set_xy(self.x, y)
+        self.clip()

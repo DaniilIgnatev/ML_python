@@ -57,7 +57,11 @@ class Classifier(NeuralNetwork):
 
         for p in figure_data.points:
             index = int(p[1] * self.__configuration.dimensions_size + p[0])
-            data[index] = 1
+            if index < self.__configuration.dimensions_size**2:
+                data[index] = 1
+            else:
+                print(figure_data.name)
+
         return data, y
 
     def __train_data_from_figure(self, figure_dataset: FigureDataset):

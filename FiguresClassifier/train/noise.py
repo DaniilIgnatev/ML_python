@@ -21,7 +21,7 @@ noise_classifier = c_factory.get_classifier(FiguresEnum.NOISE,
                                             min_scale=min_scale, max_scale=max_scale, scale_precision=scale_precision, angle_precision=angle_precision,
                                             distortion_percentage=distortion_high, save_plots=save_plots,
                                             optimizer_alpha=optimizer_alpha, optimizer_beta=optimizer_beta,
-                                            nn_h1=nn_h1, nn_h2=nn_h2, nn_l1=10, nn_l2=0.01
+                                            nn_h1=nn_h1, nn_h2=nn_h2, nn_l1=0, nn_l2=0.01
                                             )
 
 if __name__ == "__main__":
