@@ -9,7 +9,7 @@ from FiguresClassifier.Figures.data import FiguresEnum
 class FigureGenerator:
     name = None
 
-    def __init__(self, dimensions_size: int, clip_points: bool, shift_to_zero=True, scale_to_fit=True, filter=True):
+    def __init__(self, dimensions_size: int, clip_points: bool = True, shift_to_zero=True, scale_to_fit=True, filter=True):
         self.dimensions_size = dimensions_size
         self.clip_points = clip_points
         self.shift_to_zero = shift_to_zero
@@ -261,9 +261,9 @@ class NoiseGenerator(FigureGenerator):
     name = FiguresEnum.NOISE
 
     def draw(self, scale_x, scale_y, angle) -> FigureData:
-        s = int(np.random.random() * self.dimensions_size * 5)
-        if s < 2:
-            s = 2
+        s = int(np.random.random() * self.dimensions_size * 10)
+        if s < self.dimensions_size / 4:
+            s = self.dimensions_size / 4
 
         x = np.random.normal(loc=0.5, scale=1, size=s)
         y = np.random.normal(loc=0.5, scale=1, size=s)
@@ -304,57 +304,40 @@ registered_generators = {
     FiguresEnum.ELLIPSE: EllipseGenerator,
 }
 
-
 if __name__ == "__main__":
-    #%%
     size = 32
-
-    f = registered_generators[FiguresEnum.TRIANGLE](size, True, shift_to_zero=True, scale_to_fit=True)
-    data = f.draw(1, 1, 0)
-    data.plot()
-
-    triangle_generator = TriangleGenerator(size, True)
-    data = triangle_generator.draw(0.5, 3, 45)
-    data.plot()
-
-    triangle_generator = TriangleGenerator(size, True)
-    data = triangle_generator.draw(3, 1, 45)
-    data.plot()
-
-
-    rectangle_generator = RectangleGenerator(size, True)
-    data = rectangle_generator.draw(1, 1, 0)
-    data.plot()
-
-    rectangle_generator = RectangleGenerator(size, True)
-    data = rectangle_generator.draw(0.5, 3, 30)
-    data.plot()
-
-    rectangle_generator = RectangleGenerator(size, True)
-    data = rectangle_generator.draw(3, 1, 125)
-    data.plot()
-
-
-    ellipse_generator = EllipseGenerator(size, True)
-    data = ellipse_generator.draw(0.5, 3, 0)
-    data.plot()
-
-    ellipse_generator = EllipseGenerator(size, True)
-    data = ellipse_generator.draw(1, 1, 0)
-    data.plot()
-
-    ellipse_generator = EllipseGenerator(size, True)
-    data = ellipse_generator.draw(3, 1, 45)
-    data.plot()
-
+    
+    #%%
     samples = 10
-
-    line_generator = LineGenerator(size, True)
+    noise_generator = NoiseGenerator(size)
     for i in range(samples):
-        data = line_generator.draw(1, 1, 20 * i)
+        data = noise_generator.draw(samples - i, i, 20 * i)
         data.plot()
-    #
-    # noise_generator = NoiseGenerator(size, True)
-    # for i in range(samples):
-    #     data = noise_generator.draw(1, 1, 0)
-    #     data.plot()
+
+    #%%
+    samples = 10
+    line_generator = LineGenerator(size)
+    for i in range(samples):
+        data = line_generator.draw(samples - i, i, 20 * i)
+        data.plot()
+
+    #%%
+    samples = 10
+    triangle_generator = TriangleGenerator(size)
+    for i in range(samples):
+        data = triangle_generator.draw(samples - i, i, 20 * i)
+        data.plot()
+
+    #%%
+    samples = 10
+    rectangle_generator = RectangleGenerator(size)
+    for i in range(samples):
+        data = rectangle_generator.draw(samples - i, i, 20 * i)
+        data.plot()
+
+    #%%
+    samples = 10
+    ellipse_generator = EllipseGenerator(size)
+    for i in range(samples):
+        data = ellipse_generator.draw(samples - i, i, 20 * i)
+        data.plot()
