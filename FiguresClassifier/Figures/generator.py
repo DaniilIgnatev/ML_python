@@ -1,5 +1,6 @@
 import numpy as np
 import numpy.linalg as la
+import random
 
 from FiguresClassifier.Figures.data import FigureData
 from FiguresClassifier.Figures.data import FiguresEnum
@@ -8,12 +9,12 @@ from FiguresClassifier.Figures.data import FiguresEnum
 class FigureGenerator:
     name = None
 
-    def __init__(self, dimensions_size: int, clip_points: bool, shift_to_zero=True, scale_to_fit=True, verbose=False):
+    def __init__(self, dimensions_size: int, clip_points: bool, shift_to_zero=True, scale_to_fit=True, filter=True):
         self.dimensions_size = dimensions_size
         self.clip_points = clip_points
         self.shift_to_zero = shift_to_zero
         self.scale_to_fit = scale_to_fit
-        self.verbose = verbose
+        self.filter = filter
 
     def draw(self, scale_x, scale_y, angle) -> FigureData:
         pass
@@ -23,7 +24,7 @@ class FigureGenerator:
         key_data_copy.scale_key_points()
         key_data_copy.scale(scale_x, scale_y)
 
-        data = FigureData(self.name, self.dimensions_size)
+        data = FigureData(key_data.name, self.dimensions_size)
         points_transformed = key_data_copy.points
         p_last = points_transformed[0]
 
@@ -48,7 +49,9 @@ class FigureGenerator:
         if self.clip_points:
             data.clip()
 
-        data.filter()
+        if self.filter:
+            data.filter()
+
         return data
 
     def line(self, p1, p2) -> FigureData:
@@ -75,10 +78,7 @@ class FigureGenerator:
                 points = points_XY
 
             data.set_points(points)
-            data.filter()
-
-        if self.verbose:
-            print(data.points)
+            # data.filter()
 
         return data
 
@@ -233,36 +233,40 @@ class LineGenerator(FigureGenerator):
     name = FiguresEnum.LINE
 
     def draw(self, scale_x, scale_y, angle) -> FigureData:
-        x1 = np.random.random()
-        y1 = np.random.random()
+        points = random.choice([
+            np.array([
+                [0, 0.5],
+                [1, 0.5],
+            ]),
+            np.array([
+                [0, 0],
+                [0, 1],
+            ]),
+            np.array([
+                [0, 0],
+                [1, 1],
+            ]),
+            np.array([
+                [0, 1],
+                [1, 0],
+            ]),
+        ])
 
-        x2 = np.random.random()
-        y2 = np.random.random()
-
-        while int(x1 * 10) == int(x2 * 10) or int(y1 * 10) == int(y2 * 10):
-            x2 = int(np.random.random() * 10) / 10
-            y2 = int(np.random.random() * 10) / 10
-
-        points = np.array(
-            [
-                np.array([x1, y1]),
-                np.array([x2, y2]),
-            ]
-        )
-
+        self.scale_to_fit = False
         data = FigureData(self.name, self.dimensions_size, points=points)
-        try:
-            return self._draw_from_key_data(data, scale_x, scale_y, angle)
-        except:
-            return self.draw(scale_x, scale_y, angle)
+        return self._draw_from_key_data(data, scale_x, scale_y, angle)
 
 
 class NoiseGenerator(FigureGenerator):
     name = FiguresEnum.NOISE
 
     def draw(self, scale_x, scale_y, angle) -> FigureData:
-        x = np.random.normal(loc=0.5, scale=1, size=self.dimensions_size)
-        y = np.random.normal(loc=0.5, scale=1, size=self.dimensions_size)
+        s = int(np.random.random() * self.dimensions_size * 5)
+        if s < 2:
+            s = 2
+
+        x = np.random.normal(loc=0.5, scale=1, size=s)
+        y = np.random.normal(loc=0.5, scale=1, size=s)
         data = FigureData(self.name, self.dimensions_size, x=x, y=y)
 
         if self.shift_to_zero:
@@ -345,10 +349,10 @@ if __name__ == "__main__":
 
     samples = 10
 
-    # line_generator = LineGenerator(size, True)
-    # for i in range(samples):
-    #     data = line_generator.draw(1, 1, 0)
-    #     data.plot()
+    line_generator = LineGenerator(size, True)
+    for i in range(samples):
+        data = line_generator.draw(1, 1, 20 * i)
+        data.plot()
     #
     # noise_generator = NoiseGenerator(size, True)
     # for i in range(samples):

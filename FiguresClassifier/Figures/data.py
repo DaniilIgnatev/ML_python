@@ -36,12 +36,15 @@ class FigureData:
         return FigureData(self.name, self.dimensions_size, x=self.x.copy(), y=self.y.copy())
 
     def set_points(self, points):
-        self.points = points
-        self.x = self.points[:, 0]
-        self.y = self.points[:, 1]
+        if points.ndim == 2:
+            self.points = points
+            self.x = self.points[:, 0]
+            self.y = self.points[:, 1]
 
-        if self.is_empty:
-            self.set_xy(points[:, 0], points[:, 1])
+            if self.is_empty:
+                self.set_xy(points[:, 0], points[:, 1])
+            else:
+                self.set_xy(np.array([]), np.array([]))
         else:
             self.set_xy(np.array([]), np.array([]))
 
@@ -97,6 +100,9 @@ class FigureData:
         self.set_points(points)
 
     def scale(self, scale_x, scale_y):
+        if self.name == FiguresEnum.LINE:
+            return
+
         S = np.array([[scale_x, 0],
                       [0, scale_y]])
 
@@ -104,6 +110,9 @@ class FigureData:
         self.set_points(points)
 
     def rotate(self, angle):
+        if self.name == FiguresEnum.LINE:
+            return
+
         angle = -angle
         max = np.max(self.points)
         center_point = np.array([max / 2, max / 2])
@@ -120,32 +129,37 @@ class FigureData:
 
     def clip(self):
         points = self.points
-        filtered_points = []
+        clipped_points = []
 
         for p in points:
-            if 0 <= p[0] < self.dimensions_size:
-                if 0 <= p[1] < self.dimensions_size:
-                    filtered_points.append(np.array([p[0], p[1]]))
+            if not np.isnan(p[0]):
+                if not np.isnan(p[1]):
+                    if 0 <= p[0] < self.dimensions_size:
+                        if 0 <= p[1] < self.dimensions_size:
+                            clipped_points.append(np.array([p[0], p[1]]))
 
-        filtered_points = np.array(filtered_points)
-        self.set_points(filtered_points)
+        clipped_points = np.array(clipped_points)
+        self.set_points(clipped_points)
 
     def filter(self):
         points_dict = {}
 
         for p in self.points:
-            x_int = int(p[0])
-            y_int = int(p[1])
-            point = np.array([x_int, y_int])
+            if p.size != 0:
+                if not np.isnan(p[0]):
+                    if not np.isnan(p[1]):
+                        x_int = int(p[0])
+                        y_int = int(p[1])
+                        point = np.array([x_int, y_int])
 
-            if x_int not in points_dict:
-                points_dict[x_int] = np.array([point])
-            else:
-                values = points_dict[x_int]
-                if not (np.any(np.all(values == point, axis=1))):
-                    points_dict[x_int] = np.vstack([values, point])
-                # else:
-                #     print('repeat')
+                        if x_int not in points_dict:
+                            points_dict[x_int] = np.array([point])
+                        else:
+                            values = points_dict[x_int]
+                            if not (np.any(np.all(values == point, axis=1))):
+                                points_dict[x_int] = np.vstack([values, point])
+                            # else:
+                            #     print('repeat')
 
         values = list(points_dict.values())
         values_flattened = []
@@ -172,14 +186,16 @@ class FigureData:
         x_min = np.min(X)
         x_max = np.max(X)
         width = x_max - x_min
-        width_ratio = width / (self.dimensions_size - 1)
-        X = X / width_ratio
+        if width != 0:
+            width_ratio = width / (self.dimensions_size - 1)
+            X = X / width_ratio
 
         y_min = np.min(Y)
         y_max = np.max(Y)
         height = y_max - y_min
-        height_ratio = height / (self.dimensions_size - 1)
-        Y = Y / height_ratio
+        if height != 0:
+            height_ratio = height / (self.dimensions_size - 1)
+            Y = Y / height_ratio
 
         # x_min = np.min(X)
         # x_max = np.max(X)
@@ -198,11 +214,13 @@ class FigureData:
 
         self.set_xy(X, Y)
 
-    def simplify(self):
+    def simplify(self, factor: float):
         """
-        Deletes every second point
+        Keeps factor[0..1] part of the points
         :return:
         """
-        indices_to_delete = np.random.choice(np.arange(len(self.points)), size=int(len(self.points)/2), replace=False)
+        factor = np.clip(factor, 0, 1)
+        factor = 1 - factor
+        indices_to_delete = np.random.choice(np.arange(len(self.points)), size=int(len(self.points) * factor), replace=False)
         points = np.delete(self.points, indices_to_delete, axis=0)
         self.set_points(points)

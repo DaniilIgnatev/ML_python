@@ -54,7 +54,7 @@ class ClassifierFactory:
         nn_h2 = nn_h2
         nn_l1 = nn_l1
         nn_l2 = nn_l2
-        nn_mini_batch_size = 32
+        nn_mini_batch_size = 64
         nn_output = True
 
         self.nn_config = NeuralNetworkConfiguration(sizes=[self.dimensions_size**2, nn_h1, nn_h2, 1], lambda_l1=nn_l1, lambda_l2=nn_l2,

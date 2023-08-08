@@ -9,104 +9,45 @@ from FiguresClassifier.Figures.data import FigureData
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Button, TextBox
 
+from FiguresClassifier.train.common_parameters import dimensions_size
+
 random.seed(1)
 np.random.seed(1)
 
-dimensions_size = 32
+from FiguresClassifier.train.noise import noise_classifier
 
-if getattr(sys, 'frozen', False):
-    root_path = os.path.dirname(sys.executable)
-else:
-    root_path = os.path.abspath(os.getcwd())
-root_path = os.path.join(root_path, 'FiguresClassifier/save')
-print(f'root_path: {root_path}')
-
-c_factory = ClassifierFactory(dimensions_size, root_path)
-
-# mini_dataset
-# min_scale=1.0
-# max_scale=3.0
-# scale_precision=1.0
-# angle_precision=45
-# distortion_percentage=5
-# save_plots=True
-#
-# optimizer_alpha=0.01
-# optimizer_beta=0.9
-#
-# nn_h1=100
-# nn_h2=10
-# nn_l1=0.001
-# nn_l2=0.1
-
-#main dataset
-from FiguresClassifier.train.common_parameters import min_scale
-from FiguresClassifier.train.common_parameters import max_scale
-from FiguresClassifier.train.common_parameters import scale_precision
-from FiguresClassifier.train.common_parameters import angle_precision
-from FiguresClassifier.train.common_parameters import distortion_small
-from FiguresClassifier.train.common_parameters import distortion_medium
-from FiguresClassifier.train.common_parameters import distortion_high
-from FiguresClassifier.train.common_parameters import save_plots
-from FiguresClassifier.train.common_parameters import optimizer_alpha
-from FiguresClassifier.train.common_parameters import optimizer_beta
-from FiguresClassifier.train.common_parameters import nn_h1
-from FiguresClassifier.train.common_parameters import nn_h2
-
-noise_classifier = c_factory.get_classifier(FiguresEnum.NOISE,
-                                            min_scale=min_scale, max_scale=max_scale, scale_precision=scale_precision, angle_precision=angle_precision,
-                                            distortion_percentage=distortion_high, save_plots=save_plots,
-                                            optimizer_alpha=optimizer_alpha, optimizer_beta=optimizer_beta,
-                                            nn_h1=nn_h1, nn_h2=nn_h2, nn_l1=0, nn_l2=0.01
-                                            )
 if not noise_classifier.is_trained():
     print(f'training the noise_classifier')
     noise_classifier.train_classifier()
 else:
     print('loading the noise_classifier')
 
-line_classifier = c_factory.get_classifier(FiguresEnum.LINE,
-                                           min_scale=min_scale, max_scale=max_scale, scale_precision=scale_precision, angle_precision=angle_precision,
-                                           distortion_percentage=distortion_medium, save_plots=save_plots,
-                                           optimizer_alpha=optimizer_alpha, optimizer_beta=optimizer_beta,
-                                           nn_h1=nn_h1, nn_h2=nn_h2, nn_l1=0, nn_l2=0.01
-                                           )
+from FiguresClassifier.train.line import line_classifier
+
 if not line_classifier.is_trained():
     print(f'training the line_classifier')
     line_classifier.train_classifier()
 else:
     print('loading the line_classifier')
 
-triangle_classifier = c_factory.get_classifier(FiguresEnum.TRIANGLE,
-                                               min_scale=min_scale, max_scale=max_scale, scale_precision=scale_precision, angle_precision=angle_precision,
-                                               distortion_percentage=distortion_medium, save_plots=save_plots,
-                                               optimizer_alpha=optimizer_alpha, optimizer_beta=optimizer_beta,
-                                               nn_h1=nn_h1, nn_h2=nn_h2, nn_l1=0, nn_l2=0.01
-                                               )
+from FiguresClassifier.train.triangle import triangle_classifier
+
 if not triangle_classifier.is_trained():
     print(f'training the triangle_classifier')
     triangle_classifier.train_classifier()
 else:
     print('loading the triangle_classifier')
 
-rectangle_classifier = c_factory.get_classifier(FiguresEnum.RECTANGLE,
-                                                min_scale=min_scale, max_scale=max_scale, scale_precision=scale_precision, angle_precision=angle_precision,
-                                                distortion_percentage=distortion_medium, save_plots=save_plots,
-                                                optimizer_alpha=optimizer_alpha, optimizer_beta=optimizer_beta,
-                                                nn_h1=nn_h1, nn_h2=nn_h2, nn_l1=0, nn_l2=0.01
-                                                )
+from FiguresClassifier.train.rectangle import rectangle_classifier
+
 if not rectangle_classifier.is_trained():
     print(f'training the rectangle_classifier')
     rectangle_classifier.train_classifier()
 else:
     print('loading the rectangle_classifier')
 
-ellipse_classifier = c_factory.get_classifier(FiguresEnum.ELLIPSE,
-                                              min_scale=min_scale, max_scale=max_scale, scale_precision=scale_precision, angle_precision=angle_precision,
-                                              distortion_percentage=distortion_small, save_plots=save_plots,
-                                              optimizer_alpha=optimizer_alpha, optimizer_beta=optimizer_beta,
-                                              nn_h1=nn_h1, nn_h2=nn_h2, nn_l1=0, nn_l2=0
-                                              )
+from FiguresClassifier.train.ellipse import ellipse_classifier
+
 if not ellipse_classifier.is_trained():
     print(f'training the ellipse_classifier')
     ellipse_classifier.train_classifier()
@@ -145,6 +86,7 @@ ydata = []
 is_pressed = False
 
 data = FigureData(FiguresEnum.NOISE, dimensions_size)
+
 
 # Mouse button press event
 def on_press(event):

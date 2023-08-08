@@ -109,11 +109,7 @@ class DatasetGenerator:
                                          int((self.__configuration.max_angle - self.__configuration.min_angle) / self.__configuration.angle_precision) + 1,
                                          endpoint=True):
                     data = figure.draw(scale_x, scale_y, angle)
-                    if not data.is_empty():
-                        figures.append(data)
-
-                    data = figure.draw(scale_x, scale_y, angle)
-                    data.simplify()
+                    data.simplify(0.8)
                     if not data.is_empty():
                         figures.append(data)
 
@@ -126,20 +122,28 @@ class DatasetGenerator:
                         data.shift_to_zero()
                         data.scale_to_fit()
                         data.clip()
-                        data.simplify()
+                        data.filter()
+                        data.simplify(0.8)
 
                         if not data.is_empty():
                             figures.append(data)
 
+                    data = figure.draw(scale_x, scale_y, angle)
+                    data.simplify(0.7)
+                    if not data.is_empty():
+                        figures.append(data)
+
+                    if self.__configuration.distortion_percentage > 0:
                         data = figure.draw(scale_x, scale_y, angle)
-                        y_offset = np.random.random(data.y.size) * (self.__configuration.dimensions_size * self.__configuration.distortion_percentage / 2 / 100)
+                        y_offset = np.random.random(data.y.size) * (self.__configuration.dimensions_size * self.__configuration.distortion_percentage / 100)
                         y = data.y + y_offset
                         data.set_xy(data.x, y)
 
                         data.shift_to_zero()
                         data.scale_to_fit()
                         data.clip()
-                        data.simplify()
+                        data.filter()
+                        data.simplify(0.7)
 
                         if not data.is_empty():
                             figures.append(data)
