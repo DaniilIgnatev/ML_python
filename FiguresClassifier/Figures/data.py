@@ -224,3 +224,8 @@ class FigureData:
         indices_to_delete = np.random.choice(np.arange(len(self.points)), size=int(len(self.points) * factor), replace=False)
         points = np.delete(self.points, indices_to_delete, axis=0)
         self.set_points(points)
+
+    def distortion(self, percentage: float):
+        y_offset = np.random.random(self.y.size) * (self.dimensions_size * percentage / 100)
+        y = self.y + y_offset
+        self.set_xy(self.x, y)

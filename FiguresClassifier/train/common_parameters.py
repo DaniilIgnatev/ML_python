@@ -43,9 +43,9 @@ min_scale = 0.5
 max_scale = 3.0
 scale_precision = 0.25
 angle_precision = 20
-distortion_low = 2
-distortion_medium = 5
-distortion_high = 10
+distortion_low = 5
+distortion_medium = 10
+distortion_high = 100
 save_plots = False
 
 optimizer_alpha = 0.01

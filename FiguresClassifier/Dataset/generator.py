@@ -114,37 +114,19 @@ class DatasetGenerator:
                         figures.append(data)
 
                     if self.__configuration.distortion_percentage > 0:
-                        data = figure.draw(scale_x, scale_y, angle)
-                        y_offset = np.random.random(data.y.size) * (self.__configuration.dimensions_size * self.__configuration.distortion_percentage / 100)
-                        y = data.y + y_offset
-                        data.set_xy(data.x, y)
-
-                        data.shift_to_zero()
-                        data.scale_to_fit()
-                        data.clip()
-                        data.filter()
+                        data = figure.draw(scale_x, scale_y, angle, self.__configuration.distortion_percentage)
                         data.simplify(0.8)
-
                         if not data.is_empty():
                             figures.append(data)
 
-                    data = figure.draw(scale_x, scale_y, angle)
+                    data = figure.draw(scale_x, scale_y, angle, 0)
                     data.simplify(0.7)
                     if not data.is_empty():
                         figures.append(data)
 
                     if self.__configuration.distortion_percentage > 0:
-                        data = figure.draw(scale_x, scale_y, angle)
-                        y_offset = np.random.random(data.y.size) * (self.__configuration.dimensions_size * self.__configuration.distortion_percentage / 100)
-                        y = data.y + y_offset
-                        data.set_xy(data.x, y)
-
-                        data.shift_to_zero()
-                        data.scale_to_fit()
-                        data.clip()
-                        data.filter()
+                        data = figure.draw(scale_x, scale_y, angle, self.__configuration.distortion_percentage)
                         data.simplify(0.7)
-
                         if not data.is_empty():
                             figures.append(data)
 

@@ -16,10 +16,10 @@ class FigureGenerator:
         self.scale_to_fit = scale_to_fit
         self.filter = filter
 
-    def draw(self, scale_x, scale_y, angle) -> FigureData:
+    def draw(self, scale_x, scale_y, angle, distortion_percentage) -> FigureData:
         pass
 
-    def _draw_from_key_data(self, key_data: FigureData, scale_x, scale_y, angle) -> FigureData:
+    def _draw_from_key_data(self, key_data: FigureData, scale_x, scale_y, angle, distortion_percentage) -> FigureData:
         key_data_copy = key_data.__copy__()
         key_data_copy.scale_key_points()
         key_data_copy.scale(scale_x, scale_y)
@@ -45,6 +45,12 @@ class FigureGenerator:
 
         if self.scale_to_fit:
             data.scale_to_fit()
+
+        if distortion_percentage > 0:
+            if self.filter:
+                data.filter()
+
+            data.distortion(distortion_percentage)
 
         if self.clip_points:
             data.clip()
@@ -78,7 +84,7 @@ class FigureGenerator:
                 points = points_XY
 
             data.set_points(points)
-            # data.filter()
+            data.filter()
 
         return data
 
@@ -150,7 +156,7 @@ def _quicksort(points):
 class TriangleGenerator(FigureGenerator):
     name = FiguresEnum.TRIANGLE
 
-    def draw(self, scale_x, scale_y, angle) -> FigureData:
+    def draw(self, scale_x, scale_y, angle, distortion_percentage) -> FigureData:
         points = np.array(
             [
                 np.array([0, 1]),
@@ -160,13 +166,13 @@ class TriangleGenerator(FigureGenerator):
         )
 
         data = FigureData(self.name, self.dimensions_size, points=points)
-        return self._draw_from_key_data(data, scale_x, scale_y, angle)
+        return self._draw_from_key_data(data, scale_x, scale_y, angle, distortion_percentage)
 
 
 class RectangleGenerator(FigureGenerator):
     name = FiguresEnum.RECTANGLE
 
-    def draw(self, scale_x, scale_y, angle) -> FigureData:
+    def draw(self, scale_x, scale_y, angle, distortion_percentage) -> FigureData:
         points = np.array(
             [
                 np.array([0, 0]),
@@ -177,13 +183,13 @@ class RectangleGenerator(FigureGenerator):
         )
 
         data = FigureData(self.name, self.dimensions_size, points=points)
-        return self._draw_from_key_data(data, scale_x, scale_y, angle)
+        return self._draw_from_key_data(data, scale_x, scale_y, angle, distortion_percentage)
 
 
 class EllipseGenerator(FigureGenerator):
     name = FiguresEnum.ELLIPSE
 
-    def draw(self, scale_x, scale_y, angle) -> FigureData:
+    def draw(self, scale_x, scale_y, angle, distortion_percentage) -> FigureData:
         h = (self.dimensions_size-1) / 2
         k = (self.dimensions_size-1) / 2
         r = (self.dimensions_size-1) / 2
@@ -218,10 +224,14 @@ class EllipseGenerator(FigureGenerator):
         if self.scale_to_fit:
             data.scale_to_fit()
 
+        if distortion_percentage > 0:
+            data.distortion(distortion_percentage)
+
         if self.clip_points:
             data.clip()
 
-        data.filter()
+        if self.filter:
+            data.filter()
 
         points = np.array(_quicksort(data.points))
         data.set_points(points)
@@ -232,7 +242,7 @@ class EllipseGenerator(FigureGenerator):
 class LineGenerator(FigureGenerator):
     name = FiguresEnum.LINE
 
-    def draw(self, scale_x, scale_y, angle) -> FigureData:
+    def draw(self, scale_x, scale_y, angle, distortion_percentage) -> FigureData:
         points = random.choice([
             np.array([
                 [0, 0.5],
@@ -254,14 +264,14 @@ class LineGenerator(FigureGenerator):
 
         self.scale_to_fit = False
         data = FigureData(self.name, self.dimensions_size, points=points)
-        return self._draw_from_key_data(data, scale_x, scale_y, angle)
+        return self._draw_from_key_data(data, scale_x, scale_y, angle, distortion_percentage)
 
 
 class NoiseGenerator(FigureGenerator):
     name = FiguresEnum.NOISE
 
-    def draw(self, scale_x, scale_y, angle) -> FigureData:
-        s = int(np.random.random() * self.dimensions_size * 10)
+    def draw(self, scale_x, scale_y, angle, distortion_percentage) -> FigureData:
+        s = int((np.random.random() + 0.0) * self.dimensions_size * 10)
         if s < self.dimensions_size / 4:
             s = self.dimensions_size / 4
 
@@ -306,38 +316,40 @@ registered_generators = {
 
 if __name__ == "__main__":
     size = 32
-    
+
     #%%
     samples = 10
     noise_generator = NoiseGenerator(size)
     for i in range(samples):
-        data = noise_generator.draw(samples - i, i, 20 * i)
-        data.plot()
+        data = noise_generator.draw(samples - i, i + 1, 20 * i, 25)
+        data.plot([0, size], [0, size])
 
     #%%
     samples = 10
     line_generator = LineGenerator(size)
     for i in range(samples):
-        data = line_generator.draw(samples - i, i, 20 * i)
-        data.plot()
+        data = line_generator.draw(samples - i, i + 1, 20 * i, 10)
+        data.plot([0, size], [0, size])
 
     #%%
     samples = 10
     triangle_generator = TriangleGenerator(size)
     for i in range(samples):
-        data = triangle_generator.draw(samples - i, i, 20 * i)
-        data.plot()
+        data = triangle_generator.draw(samples - i, i + 1, 20 * i, 5)
+        data.plot([0, size], [0, size])
 
     #%%
     samples = 10
     rectangle_generator = RectangleGenerator(size)
     for i in range(samples):
-        data = rectangle_generator.draw(samples - i, i, 20 * i)
-        data.plot()
+        data = rectangle_generator.draw(samples - i, i + 1, 20 * i, 5)
+        data.plot([0, size], [0, size])
 
     #%%
     samples = 10
     ellipse_generator = EllipseGenerator(size)
     for i in range(samples):
-        data = ellipse_generator.draw(samples - i, i, 20 * i)
-        data.plot()
+        data = ellipse_generator.draw(samples - i, i + 1, 20 * i, 10)
+        data.plot([0, size], [0, size])
+
+#%%
