@@ -7,6 +7,7 @@ class OptimizerEnum(Enum):
     GDOptimizer = 'GDOptimizer'
     AdaGradOptimizer = 'AdaGradOptimizer'
     RMSPropOptimizer = 'RMSPropOptimizer'
+    MomentumOptimizer = 'MomentumOptimizer'
     ADAMOptimizer = 'ADAMOptimizer'
 
 
@@ -239,7 +240,7 @@ class RMSPropOptimizer(Optimizer):
             configuration - container with parameters
         """
         super().__init__(configuration)
-        self.nu = {}
+        self.u = {}
 
     def _deltas(self, grads, key):
         """
@@ -251,14 +252,54 @@ class RMSPropOptimizer(Optimizer):
             The list containing the deltas of the parameter
         """
         # Initialize the last deltas
-        if key not in self.nu:
-            self.nu[key] = [np.zeros(grad.shape) for grad in grads]
+        if key not in self.u:
+            self.u[key] = [np.zeros(grad.shape) for grad in grads]
 
         # ToDo: Update the exponential averages of squared partial derivatives (1 point)
-        self.nu[key] = [self._configuration.beta1 * nu + ((1 - self._configuration.beta1) * (grad * grad)) for nu, grad in zip(self.nu[key], grads)]
+        self.u[key] = [self._configuration.beta1 * u + ((1 - self._configuration.beta1) * (grad * grad)) for u, grad in zip(self.u[key], grads)]
 
         # ToDo: Compute the deltas (1 point)
-        deltas = [-self._configuration.alpha / np.sqrt(self.Lambda + nu) * g for nu, g in zip(self.nu[key], grads)]
+        deltas = [-self._configuration.alpha / np.sqrt(self.Lambda + u) * g for u, g in zip(self.u[key], grads)]
+
+        # Store the updated deltas
+        self.last_deltas[key] = deltas
+
+        # Return the computed deltas
+        return deltas
+
+
+class MomentumOptimizer(Optimizer):
+    """
+    RMSProp optimizer
+    """
+
+    def __init__(self, configuration: OptimizerConfiguration):
+        """
+        Initializes an instance of the gradient descent optimizer with momentum
+        Arguments:
+            configuration - container with parameters
+        """
+        super().__init__(configuration)
+        self.m = {}
+
+    def _deltas(self, grads, key):
+        """
+        Computes the deltas based on the gradients
+        Arguments:
+            grads: a list containing the current gradients of the parameter
+            key: a key identifying the type of the parameter
+        Returns:
+            The list containing the deltas of the parameter
+        """
+        # Initialize the last deltas
+        if key not in self.m:
+            self.m[key] = [np.zeros(grad.shape) for grad in grads]
+
+        # ToDo: Update the exponential averages of squared partial derivatives (1 point)
+        self.m[key] = [self._configuration.beta1 * m + (1 - self._configuration.beta1) * grad for m, grad in zip(self.m[key], grads)]
+
+        # ToDo: Compute the deltas (1 point)
+        deltas = [-self._configuration.alpha * m for m in self.m[key]]
 
         # Store the updated deltas
         self.last_deltas[key] = deltas
@@ -275,10 +316,8 @@ class AdamOptimizer(Optimizer):
             configuration - container with parameters
         """
         super().__init__(configuration)
-        self.nu = {}
-        self.m = 0.0
-        self.v = 0.0
-        self.t = 0
+        self.m = {}
+        self.u = {}
 
     def _deltas(self, grads, key):
         """
@@ -289,18 +328,7 @@ class AdamOptimizer(Optimizer):
         Returns:
             The list containing the deltas of the parameter
         """
-        self.t += 1.0  # Increment Time Step
-        # Update biased first and second moment estimates
-        grads_np = np.array(grads)
-
-        self.m = self._configuration.beta1 * self.m + (1.0 - self._configuration.beta1) * grads_np
-        self.v = self._configuration.beta2 * self.v + (1.0 - self._configuration.beta2) * np.power(grads_np, 2)
-        # Compute bias-corrected first and second moment estimates
-        m_hat = self.m / (1.0 - np.power(self._configuration.beta1, self.t))
-        v_hat = self.v / (1.0 - np.power(self._configuration.beta2, self.t))
-        # Update parameters
-        deltas = self._configuration.alpha * m_hat / (np.sqrt(v_hat) + self._configuration.eps)
-        return deltas
+        pass
 
 
 class OptimizerFactory:
@@ -312,6 +340,8 @@ class OptimizerFactory:
             return AdaGradOptimizer(configuration)
         if configuration.name == OptimizerEnum.RMSPropOptimizer:
             return RMSPropOptimizer(configuration)
+        if configuration.name == OptimizerEnum.MomentumOptimizer:
+            return MomentumOptimizer(configuration)
         if configuration.name == OptimizerEnum.ADAMOptimizer:
             return AdamOptimizer(configuration)
 

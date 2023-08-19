@@ -43,7 +43,7 @@ class ClassifierFactory:
                                                                  os.path.join(self.root_path, 'datasets'),
                                                                  self.dimensions_size, test_min_scale, test_max_scale, test_scale_precision, test_min_angle, test_max_angle, test_angle_precision, test_distortion_percentage, test_save_plots)
 
-        optimizer_name = OptimizerEnum.RMSPropOptimizer
+        optimizer_name = OptimizerEnum.MomentumOptimizer
         optimizer_alpha = optimizer_alpha
         optimizer_beta = optimizer_beta
         optimizer_record = True
