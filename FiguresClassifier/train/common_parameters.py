@@ -18,6 +18,9 @@ if 'FiguresClassifier' not in root_path:
 root_path = os.path.join(root_path, 'save')
 print(f'root_path: {root_path}')
 
+if not os.path.exists(root_path):
+    os.mkdir(root_path)
+
 c_factory = ClassifierFactory(dimensions_size, root_path)
 
 # mini config
