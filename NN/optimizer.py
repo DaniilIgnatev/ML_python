@@ -291,20 +291,14 @@ class MomentumOptimizer(Optimizer):
         Returns:
             The list containing the deltas of the parameter
         """
-        # Initialize the last deltas
         if key not in self.m:
             self.m[key] = [np.zeros(grad.shape) for grad in grads]
 
-        # ToDo: Update the exponential averages of squared partial derivatives (1 point)
         self.m[key] = [self._configuration.beta1 * m + (1 - self._configuration.beta1) * grad for m, grad in zip(self.m[key], grads)]
 
-        # ToDo: Compute the deltas (1 point)
         deltas = [-self._configuration.alpha * m for m in self.m[key]]
-
-        # Store the updated deltas
         self.last_deltas[key] = deltas
 
-        # Return the computed deltas
         return deltas
 
 
@@ -328,7 +322,21 @@ class AdamOptimizer(Optimizer):
         Returns:
             The list containing the deltas of the parameter
         """
-        pass
+        if key not in self.m:
+            self.m[key] = [np.zeros(grad.shape) for grad in grads]
+
+        self.m[key] = [self._configuration.beta1 * m + (1 - self._configuration.beta1) * grad for m, grad in zip(self.m[key], grads)]
+        m_corrected = [m / (1 - self._configuration.beta1) for m in self.m[key]]
+
+        if key not in self.u:
+            self.u[key] = [np.zeros(grad.shape) for grad in grads]
+
+        self.u[key] = [self._configuration.beta2 * u + ((1 - self._configuration.beta2) * (grad * grad)) for u, grad in zip(self.u[key], grads)]
+        u_corrected = [u / (1 - self._configuration.beta2) for u in self.u[key]]
+
+        deltas = [-self._configuration.alpha * m_head / np.sqrt(self.Lambda + u_head) for m_head, u_head in zip(m_corrected, u_corrected)]
+        self.last_deltas[key] = deltas
+        return deltas
 
 
 class OptimizerFactory:
