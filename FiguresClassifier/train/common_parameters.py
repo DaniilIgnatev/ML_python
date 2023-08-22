@@ -10,11 +10,11 @@ if getattr(sys, 'frozen', False):
 else:
     root_path = os.path.abspath(os.getcwd())
 
-if root_path.endswith('train'):
-    root_path = os.path.dirname(root_path)
+    if 'FiguresClassifier' not in root_path:
+        root_path = os.path.join(root_path, 'FiguresClassifier')
 
-if 'FiguresClassifier' not in root_path:
-    root_path = os.path.join(root_path, 'FiguresClassifier')
+# if root_path.endswith('train'):
+#     root_path = os.path.dirname(root_path)
 
 root_path = os.path.join(root_path, 'save')
 print(f'root_path: {root_path}')
