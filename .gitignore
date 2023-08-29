@@ -7,3 +7,8 @@ dist/
 *.pyc
 *.pyc
 *.spec
+NN/__pycache__/optimizer.cpython-310.pyc
+NN/__pycache__/neural_network.cpython-310.pyc
+.idea/workspace.xml
+.idea/vcs.xml
+.idea/misc.xml

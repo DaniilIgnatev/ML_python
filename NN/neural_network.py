@@ -400,8 +400,8 @@ class NeuralNetwork:
 
         # ToDo: Apply the L1 and L2 regularizations by modifying the cost
         #       function partial derivatives (0.5 points)
-        L1 = [self._configuration.lambda_l1 * np.sign(dJdW_l) for dJdW_l in dJdW]
-        L2 = [self._configuration.lambda_l2 * dJdW_l for dJdW_l in dJdW]
+        L1 = [self._configuration.lambda_l1 * np.sign(W_l) for W_l in self._configuration.weights]
+        L2 = [self._configuration.lambda_l2 * W_l for W_l in self._configuration.weights]
         dJdW = [dJdW_l + L1_l + L2_l for dJdW_l, L1_l, L2_l in zip(dJdW, L1, L2)]
 
         optimizer = OptimizerFactory.instance(optimizer_configuration)
